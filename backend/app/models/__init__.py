@@ -1,51 +1,43 @@
-from .user import MututorUser, UserRole, MuSession
-from .course import Course, CourseStatus, CourseFormat, Subject, Level, CourseSession, CourseResource
-from .enrollment import Enrollment, EnrollmentStatus
-from .feedback import Feedback, SessionEvaluation
-from .notification import Notification, NotificationType
-from .record import MeetingRecord, MeetingRecordStatus
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker
 from .base import Base
+from .models import *
 
-DATABASE_URL = "sqlite:///./app/models/mututor.db"
 
-engine = create_engine(DATABASE_URL, echo=False)
-mututor_session = sessionmaker(autocommit=False, autoflush=False, expire_on_commit=False, bind=engine)
+SERVER_NAME = 'DESKTOP-IM92AEE\\SQLEXPRESS' 
+DATABASE_NAME = 'MUDemy'
+CONNECTION_STRING = f'mssql+pyodbc://@{SERVER_NAME}/{DATABASE_NAME}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
+# USERNAME = "student123"
+# PASSWORD = "Pass123!"
+# CONNECTION_STRING = (
+#     f"mssql+pyodbc://{USERNAME}:{PASSWORD}@{SERVER_NAME}/{DATABASE_NAME}"
+#     "?driver=ODBC+Driver+17+for+SQL+Server"
+# )
+
+engine = create_engine(CONNECTION_STRING, echo=False) 
+mudemy_session = sessionmaker(autocommit=False, autoflush=False, expire_on_commit=False, bind=engine)
+
 
 __all__ = [
-    "MututorUser",
-    "UserRole",
+    "User",
     "Course",
-    "CourseStatus",
-    "CourseFormat",
-    "Subject",
-    "Level",
-    "CourseSession",
-    "CourseResource",
     "Enrollment",
-    "EnrollmentStatus",
-    "Feedback",
-    "SessionEvaluation",
-    "Notification",
-    "NotificationType",
-    "MeetingRecord",
-    "MeetingRecordStatus",
-    "MuSession",
-    "mututor_session",
+    "Payment",
+    "Certificate",
+    "Module",
+    "LessonRef",
+    "Content",
+    "Text",
+    "Video",
+    "Image",
+    "Resource",
+    "Assignment",
+    "Quiz",
+    "Question",
+    "Answer",
+    "Submission",
+    "Take",
+    "engine",
+    "mudemy_session",
     "Base"
 ]
-
-
-def clear_all_sessions():
-    """
-    Clear all rows from the MuSession table.
-    This is useful for cleanup operations or resetting session data.
-    
-    Returns:
-        int: Number of sessions deleted
-    """
-    with mututor_session() as session:
-        deleted_count = session.query(MuSession).delete()
-        session.commit()
-        return deleted_count

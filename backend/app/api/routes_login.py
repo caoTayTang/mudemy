@@ -1,16 +1,13 @@
-from fastapi import APIRouter, Body
-from ..models import*
-from ..services import*
-from fastapi.responses import JSONResponse
-from ..core import*
-from fastapi import Depends, HTTPException, status, Cookie, Response
-from datetime import datetime, timezone, timedelta
-import uuid
-from ..hcmut_database import*
+from fastapi import APIRouter, Body, Response, HTTPException
+from ..models import *
+from ..services import *
+from ..core import *
+from .auth import create_access_token 
+# No need for uuid or datetime imports here anymore
 
 logger = get_logger("LOGIN")
 router = APIRouter()
-user_service = UserService(mututor_session)
+user_service = UserService(mudemy_session)
 
 @router.get("/roles")
 def get_role():
@@ -29,63 +26,48 @@ def login(
     password = data.get("password")
     role = data.get("role")
     
-    #logger.info(role.__len__())
-    if not hcmut_api.check_password(username, password) :
+    user = user_service.get_by_username(username)
+    if not username: 
         raise HTTPException(
             status_code=401,
             detail="Incorrect username or password",
         )
-
-    user = hcmut_api.get_user_by_username(username)
-    user_id = user.id
-    if role.lower() == 'tutor' or role.lower() == 'admin':
-        mu_user = user_service.get_by_id(user_id)
-        if not mu_user or mu_user.role != role:
-            raise HTTPException(
-            status_code=403,
-            detail=f"You don't have permission to login as {role}",
+    if user.Password != password :
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
         )
-
-    session = MuSession(
-        session_id=str(uuid.uuid4()),
-        user_id=user.id,
-        role= UserRole(role.lower()),
-        expires_at= datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    if (role.lower() == 'tutor' and not user.IFlag) or (role.lower() == 'tutee' and not user.SFlag):
+        raise HTTPException(
+        status_code=403,
+        detail=f"You don't have permission to login as {role}",
     )
-    db = mututor_session()
 
-    old_session = db.query(MuSession).filter(MuSession.user_id == user_id).first()
-    if old_session:
-        db.delete(old_session)
-        db.commit()
+    if role.lower() == 'admin' and username != 'sManager':
+        raise HTTPException(
+        status_code=403,
+        detail=f"You don't have permission to login as {role}",
+    )
 
-    db.add(session)
-    db.commit()
-    db.close()
+   #payload
+    access_token = create_access_token(
+        data={"sub": str(user.UserID), "role": role.lower()}
+    )
 
     response.set_cookie(
         key="session_id",
-        value=session.session_id,
+        value=access_token,
         httponly=True,  
         secure=True,    
         samesite="lax"  
     )
     
-    return {"username": user.username, "role": role, "status": "Login successful"}
+    return {"username": username, "role": role, "status": "Login successful"}
 
 @router.post("/logout")
 def logout(
     response: Response,
-    session_id: str | None = Cookie(None), 
 ):
-    db = mututor_session()
-    if session_id:
-        session = db.query(MuSession).filter(MuSession.session_id == session_id).first()
-        if session:
-            db.delete(session)
-            db.commit()
-
-    db.close()
     response.delete_cookie(key="session_id")
     return {"status": "Logout successful"}
-
