@@ -106,7 +106,9 @@ GO
 -- 8. REQUIRES: 2 rows
 INSERT INTO REQUIRES (CourseID, Required_courseID) VALUES
 ('CRS00001', 'CRS00005'), 
-('CRS00002', 'CRS00006');
+('CRS00002', 'CRS00006'),
+('CRS00002', 'CRS00003'),
+('CRS00005', 'CRS00006');
 GO
 
 -- 9. PAYMENT: 8 rows
@@ -168,7 +170,9 @@ GO
 -- 14. IMAGE: 2 rows
 INSERT INTO [IMAGE] (ContentID, ImageID, [Image]) VALUES
 ('CON004', 'IMG001', N'/images/[CON004]react-project-structure.png'), 
-('CON009', 'IMG002', N'/images/[CON009]golden-ratio-ui.jpg');
+('CON009', 'IMG002', N'/images/[CON009]golden-ratio-ui.jpg'),
+('CON010', 'IMG003', N'/images/[CON010]devops-pipeline.png'), 
+('CON014', 'IMG004', N'/images/[CON014]cpp-memory-diagram.png');;
 GO
 
 -- 15. RESOURCE: 4 rows
@@ -211,29 +215,61 @@ INSERT INTO QUESTION (QuestionID,QuizID,Content,Correct_answer) VALUES
 ('Q001','QUI001',N'Python được tạo năm nào?',N'1991'),
 ('Q002','QUI001',N'Kiểu dữ liệu list trong Python?',N'Mutable'),
 ('Q003','QUI002',N'Hook nào dùng để quản lý trạng thái local?',N'useState'),
-('Q004','QUI002',N'useState trả về một mảng có bao nhiêu phần tử?',N'2');
+('Q004','QUI002',N'useState trả về một mảng có bao nhiêu phần tử?',N'2'),
+('Q005','QUI003',N'Figma sử dụng mô hình nào để đồng bộ dữ liệu?',N'Vector Network'),
+('Q006','QUI003',N'Phím tắt nào dùng để tạo Frame mới trong Figma?',N'F'),
+('Q007','QUI004',N'Lệnh nào dùng để xem danh sách các container đang chạy?',N'docker ps'),
+('Q008','QUI004',N'File định nghĩa môi trường container gọi là gì?',N'Dockerfile'),
+('Q009','QUI005',N'Cấu trúc dữ liệu chính trong Pandas?',N'DataFrame'),
+('Q010','QUI005',N'Thư viện nào Pandas dựa vào để xử lý số học?',N'NumPy');
 
 INSERT INTO ANSWER (QuestionID,QuizID,AnswerID,Answer) VALUES
 ('Q001','QUI001','A1',N'1989'),('Q001','QUI001','B1',N'1991'),('Q001','QUI001','C1',N'2000'),('Q001','QUI001','D1',N'1995'),
 ('Q002','QUI001','A2',N'Mutable'),('Q002','QUI001','B2',N'Immutable'),('Q002','QUI001','C2',N'Both'),('Q002','QUI001','D2',N'None'),
 ('Q003','QUI002','A3',N'useEffect'),('Q003','QUI002','B3',N'useContext'),('Q003','QUI002','C3',N'useState'),('Q003','QUI002','D3',N'useReducer'),
-('Q004','QUI002','A4',N'1'),('Q004','QUI002','B4',N'2'),('Q004','QUI002','C4',N'3'),('Q004','QUI002','D4',N'Không cố định');
+('Q004','QUI002','A4',N'1'),('Q004','QUI002','B4',N'2'),('Q004','QUI002','C4',N'3'),('Q004','QUI002','D4',N'Không cố định'),
+('Q005','QUI003','A5',N'Layers'),('Q005','QUI003','B5',N'Vector Network'),('Q005','QUI003','C5',N'Auto Layout'),('Q005','QUI003','D5',N'Components'),
+('Q006','QUI003','A6',N'R'),('Q006','QUI003','B6',N'F'),('Q006','QUI003','C6',N'C'),('Q006','QUI003','D6',N'K'),
+('Q007','QUI004','A7',N'docker logs'),('Q007','QUI004','B7',N'docker info'),('Q007','QUI004','C7',N'docker images'),('Q007','QUI004','D7',N'docker ps'),
+('Q008','QUI004','A8',N'Docker File'),('Q008','QUI004','B8',N'Dockerfile'),('Q008','QUI004','C8',N'Docker Compose'),('Q008','QUI004','D8',N'Dockerignore'),
+('Q009','QUI005','A9',N'Series'),('Q009','QUI005','B9',N'Array'),('Q009','QUI005','C9',N'DataFrame'),('Q009','QUI005','D9',N'List'),
+('Q010','QUI005','A10',N'Matplotlib'),('Q010','QUI005','B10',N'SciPy'),('Q010','QUI005','C10',N'NumPy'),('Q010','QUI005','D10',N'SciKit-Learn');
 GO
 
 -- 20. SUBMISSION: 4 rows
-INSERT INTO SUBMISSION (SubID,QuizID,AssignID,Sub_content,Grade) VALUES
-('SUB001','QUI001',NULL,N'Đáp án đúng',95.00), 
-('SUB002',NULL,'ASS001',N'submission/SUB0002/cafe-app.zip',88.00),
-('SUB003','QUI002',NULL,N'Hoàn thành',100.00), 
-('SUB004',NULL,'ASS002',N'Chưa nộp bài',0.00)
+INSERT INTO ASSIGN_SUBMISSION (SubID, UserID, AssID, Sub_content, Grade) VALUES
+('SUB001', 'USR00006', 'ASS001', N'submission/SUB002/cafe-app.zip', 88.00),
+('SUB002', 'USR00009', 'ASS002', N'Chưa nộp bài', 0.00),
+('SUB003', 'USR00010', 'ASS003', N'submission/SUB003/Deploy-AWS.zip', 95.00),
+('SUB004', 'USR00012', 'ASS004', N'submission/SUB004/cpp-game.zip', 85.00);;
+GO
+
+-- 21. QUIZ_SUBMISSION: 6 rows (Bổ sung QUI005 của USR00008)
+INSERT INTO QUIZ_SUBMISSION (SubID, UserID, QuizID, Sub_content, Grade) VALUES
+('SUB001', 'USR00005', 'QUI001', N'Hoàn thành Quiz DeepLearning lần 1', 95.00),
+('SUB002', 'USR00011', 'QUI002', N'Hoàn thành Quiz FullStack lần 1', 100.00),
+('SUB003', 'USR00008', 'QUI003', N'Hoàn thành Quiz Figma lần 1', 100.00),
+('SUB004', 'USR00007', 'QUI004', N'Hoàn thành Quiz Docker lần 1', 100.00),
+('SUB005', 'USR00012', 'QUI005', N'Hoàn thành Quiz Pandas lần 1', 90.00),
+('SUB006', 'USR00008', 'QUI005', N'Hoàn thành Quiz Pandas lần 2', 92.00); 
 GO
 
 -- 21. TAKE: 10 rows
 INSERT INTO TAKE (UserID,LessonID,is_finished) VALUES
-('USR00005','CON001',1),('USR00006','CON003',1),('USR00008','CON004',1),
+('USR00013','CON001',1),('USR00006','CON003',1),('USR00008','CON004',1),
 ('USR00007','CON005',1),('USR00009','CON006',1),('USR00010','CON007',0),
-('USR00005','QUI001',1),('USR00006','ASS001',1),('USR00008','QUI003',1),
-('USR00011','CON002',1);
+('USR00005','QUI001',1),
+('USR00006','ASS001',1),
+('USR00011','QUI002',1),
+('USR00009','ASS002',0),
+('USR00008','QUI003',1),
+('USR00007','QUI004',1),
+('USR00012','QUI005',1),
+('USR00008','QUI005',1),
+('USR00010','CON004',1),   
+('USR00012','CON014',1),  
+('USR00010','ASS003',1), 
+('USR00012','ASS004',1);
 GO
 
 -- 22. CERTIFICATE: 4 rows

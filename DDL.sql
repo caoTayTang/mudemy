@@ -352,25 +352,36 @@ GO
 -- ================================================
 -- 25. BẢNG SUBMISSION
 -- ================================================
-CREATE TABLE SUBMISSION (
-    SubID VARCHAR(10) NOT NULL UNIQUE,
+CREATE TABLE ASSIGN_SUBMISSION (
+    SubID VARCHAR(10),
+    UserID VARCHAR(10),
+    AssID VARCHAR(10),
+    Sub_content NVARCHAR(MAX), -- MAY CHANGE TO LINK/ DIR
+    Grade DECIMAL(5,2) CHECK (Grade >= 0 AND Grade <= 100),
+    Sub_date DATETIME NOT NULL DEFAULT GETDATE(),
+    PRIMARY KEY (SubID),
+    CONSTRAINT FK_Submission_Assign FOREIGN KEY (AssID) 
+        REFERENCES ASSIGNMENT(AssID) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT FK_Assign_Submission_User FOREIGN KEY (UserID)
+        REFERENCES [USER](UserID) ON DELETE CASCADE ON UPDATE CASCADE
+);
+GO
+
+
+CREATE TABLE QUIZ_SUBMISSION (
+    SubID VARCHAR(10),
+    UserID VARCHAR(10),
     QuizID VARCHAR(10),
-    AssignID VARCHAR(10),
     Sub_content NVARCHAR(MAX), -- MAY CHANGE TO LINK/ DIR
     Grade DECIMAL(5,2) CHECK (Grade >= 0 AND Grade <= 100),
     Sub_date DATETIME NOT NULL DEFAULT GETDATE(),
     PRIMARY KEY (SubID),
     CONSTRAINT FK_Submission_Quiz FOREIGN KEY (QuizID) 
-        REFERENCES QUIZ(QuizID) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT FK_Submission_Assignment FOREIGN KEY (AssignID) 
-        REFERENCES ASSIGNMENT(AssID) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT chk_submission_type CHECK (
-        (QuizID IS NOT NULL AND AssignID IS NULL) OR 
-        (QuizID IS NULL AND AssignID IS NOT NULL)
-    )
+        REFERENCES QUIZ(QuizID) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT FK_Quiz_Submission_User FOREIGN KEY (UserID)
+        REFERENCES [USER](UserID) ON DELETE CASCADE ON UPDATE CASCADE 
 );
 GO
-
 -- ================================================
 -- 26. BẢNG TAKE (Student takes Lesson)
 -- ================================================
