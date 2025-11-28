@@ -201,13 +201,13 @@ INSERT INTO ASSIGNMENT (AssID,Title,[Description],Deadline,ModuleID) VALUES
 GO
 
 -- 18. QUIZ: 6 rows 
-INSERT INTO QUIZ (QuizID,Title,Time_limit,Num_attempt,ModuleID) VALUES
-('QUI001',N'Quiz Deep Learning Cơ bản',1800,2,'MOD001'), 
-('QUI002',N'Quiz React Hooks',1500,1,'MOD005'), 
-('QUI003',N'Quiz Figma',1200,2,'MOD009'), 
-('QUI004',N'Quiz Docker',1800,1,'MOD016'), 
-('QUI005',N'Quiz Pandas',2000,2,'MOD018'), 
-('QUI006',N'Quiz C++ cơ bản',1800,1,'MOD021');
+INSERT INTO QUIZ (QuizID,Title,Time_limit,Num_attempt,Deadline,ModuleID) VALUES
+('QUI001',N'Quiz Deep Learning Cơ bản',1800,2,'2025-12-25 23:59:00','MOD001'), 
+('QUI002',N'Quiz React Hooks',1500,1,'2025-12-26 23:59:00','MOD005'), 
+('QUI003',N'Quiz Figma',1200,2,'2025-12-27 23:59:00','MOD009'), 
+('QUI004',N'Quiz Docker',1800,1,'2025-12-28 23:59:00','MOD016'), 
+('QUI005',N'Quiz Pandas',2000,2,'2025-12-28 23:59:00','MOD018'), 
+('QUI006',N'Quiz C++ cơ bản',1800,1,'2025-12-30 23:59:00','MOD021');
 GO
 
 -- 19. QUESTION + ANSWER

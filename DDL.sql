@@ -311,6 +311,7 @@ CREATE TABLE QUIZ (
     QuizID VARCHAR(10) PRIMARY KEY,
     Time_limit INT CHECK (Time_limit > 0), -- Seconds
     Num_attempt INT DEFAULT 1 CHECK (Num_attempt > 0),
+    Deadline DATETIME NOT NULL DEFAULT GETDATE(),
     Title NVARCHAR(200) NOT NULL,
     ModuleID VARCHAR(10) NOT NULL,
     CONSTRAINT FK_Quiz_LessonRef FOREIGN KEY (QuizID) 
@@ -414,8 +415,8 @@ BEGIN
     SELECT QuizID FROM inserted;
     
     -- Sau đó thêm vào QUIZ
-    INSERT INTO QUIZ (QuizID, Time_limit, Num_attempt, Title, ModuleID)
-    SELECT QuizID, Time_limit, Num_attempt, Title, ModuleID
+    INSERT INTO QUIZ (QuizID, Time_limit, Num_attempt, Title, Deadline, ModuleID)
+    SELECT QuizID, Time_limit, Num_attempt, Title, Deadline, ModuleID
     FROM inserted;
 END;
 GO
