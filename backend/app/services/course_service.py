@@ -1,728 +1,487 @@
 from sqlalchemy.orm import sessionmaker
-from typing import List, Optional
+from sqlalchemy.exc import IntegrityError
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from ..models.models import (
-    Course, Module, LessonRef, Content, Text, Video, Image,
-    Assignment, Quiz, Question, Answer
+    Course, Module, Requires, Content, LessonRef, 
+    Text, Video, Image, Category
 )
 
+
 class CourseService:
+    """Service for Course CRUD operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, course_id: str, title: str, language: str,
-               description: Optional[str] = None, difficulty: Optional[str] = None) -> Course:
-        course = Course(
-            CourseID=course_id,
-            Title=title,
-            Language=language,
-            Description=description,
-            Difficulty=difficulty
-        )
-        db = self.db_session()
-        db.add(course)
-        db.commit()
-        db.refresh(course)
-        db.close()
-        return course
-
-    def get_by_id(self, course_id: str) -> Optional[Course]:
-        db = self.db_session()
-        result = db.query(Course).filter(Course.CourseID == course_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Course]:
-        db = self.db_session()
-        result = db.query(Course).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_difficulty(self, difficulty: str) -> List[Course]:
-        db = self.db_session()
-        result = db.query(Course).filter(Course.Difficulty == difficulty).all()
-        db.close()
-        return result
-
-    def get_by_language(self, language: str) -> List[Course]:
-        db = self.db_session()
-        result = db.query(Course).filter(Course.Language == language).all()
-        db.close()
-        return result
-
-    def update(self, course_id: str, title: Optional[str] = None,
-               description: Optional[str] = None, difficulty: Optional[str] = None,
-               language: Optional[str] = None) -> Optional[Course]:
-        db = self.db_session()
-        course = db.query(Course).filter(Course.CourseID == course_id).first()
-        if not course:
-            db.close()
-            return None
-        
-        if title is not None:
-            course.Title = title
-        if description is not None:
-            course.Description = description
-        if difficulty is not None:
-            course.Difficulty = difficulty
-        if language is not None:
-            course.Language = language
-        
-        db.commit()
-        db.refresh(course)
-        db.close()
-        return course
-
-    def delete(self, course_id: str) -> bool:
-        db = self.db_session()
-        course = db.query(Course).filter(Course.CourseID == course_id).first()
-        if not course:
-            db.close()
-            return False
-        
-        db.delete(course)
-        db.commit()
-        db.close()
-        return True
-
-    def add_category(self, course_id: str, category: str) -> bool:
-        db = self.db_session()
-        try:
-            db.execute(category_table.insert().values(CourseID=course_id, Category=category))
-            db.commit()
-            db.close()
+    
+    def create_course(self, course_data: Dict[str, Any]) -> Course:
+        """Create a new course"""
+        with self.db_session() as session:
+            try:
+                course = Course(**course_data)
+                session.add(course)
+                session.commit()
+                session.refresh(course)
+                return course
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating course: {str(e)}")
+    
+    def get_course_by_id(self, course_id: str) -> Optional[Course]:
+        """Get course by ID"""
+        with self.db_session() as session:
+            return session.query(Course).filter(Course.CourseID == course_id).first()
+    
+    def get_all_courses(self, skip: int = 0, limit: int = 100) -> List[Course]:
+        """Get all courses with pagination"""
+        with self.db_session() as session:
+            return session.query(Course).offset(skip).limit(limit).all()
+    
+    def update_course(self, course_id: str, update_data: Dict[str, Any]) -> Optional[Course]:
+        """Update course information"""
+        with self.db_session() as session:
+            course = session.query(Course).filter(Course.CourseID == course_id).first()
+            if not course:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(course, key):
+                    setattr(course, key, value)
+            
+            session.commit()
+            session.refresh(course)
+            return course
+    
+    def delete_course(self, course_id: str) -> bool:
+        """Delete a course"""
+        with self.db_session() as session:
+            course = session.query(Course).filter(Course.CourseID == course_id).first()
+            if not course:
+                return False
+            
+            session.delete(course)
+            session.commit()
             return True
-        except:
-            db.close()
-            return False
-
-    def remove_category(self, course_id: str, category: str) -> bool:
-        db = self.db_session()
-        result = db.execute(
-            category_table.delete().where(
-                (category_table.c.CourseID == course_id) & 
-                (category_table.c.Category == category)
-            )
-        )
-        db.commit()
-        db.close()
-        return result.rowcount > 0
+    
+    def search_courses_by_title(self, title: str) -> List[Course]:
+        """Search courses by title"""
+        with self.db_session() as session:
+            return session.query(Course).filter(Course.Title.like(f'%{title}%')).all()
+    
+    def get_courses_by_difficulty(self, difficulty: str) -> List[Course]:
+        """Get courses by difficulty level"""
+        with self.db_session() as session:
+            return session.query(Course).filter(Course.Difficulty == difficulty).all()
 
 
 class ModuleService:
+    """Service for Module CRUD operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, module_id: str, title: str, course_id: str) -> Module:
-        module = Module(
-            ModuleID=module_id,
-            Title=title,
-            CourseID=course_id
-        )
-        db = self.db_session()
-        db.add(module)
-        db.commit()
-        db.refresh(module)
-        db.close()
-        return module
-
-    def get_by_id(self, module_id: str) -> Optional[Module]:
-        db = self.db_session()
-        result = db.query(Module).filter(Module.ModuleID == module_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Module]:
-        db = self.db_session()
-        result = db.query(Module).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_course(self, course_id: str) -> List[Module]:
-        db = self.db_session()
-        result = db.query(Module).filter(Module.CourseID == course_id).all()
-        db.close()
-        return result
-
-    def update(self, module_id: str, title: Optional[str] = None,
-               course_id: Optional[str] = None) -> Optional[Module]:
-        db = self.db_session()
-        module = db.query(Module).filter(Module.ModuleID == module_id).first()
-        if not module:
-            db.close()
-            return None
-        
-        if title is not None:
-            module.Title = title
-        if course_id is not None:
-            module.CourseID = course_id
-        
-        db.commit()
-        db.refresh(module)
-        db.close()
-        return module
-
-    def delete(self, module_id: str) -> bool:
-        db = self.db_session()
-        module = db.query(Module).filter(Module.ModuleID == module_id).first()
-        if not module:
-            db.close()
-            return False
-        
-        db.delete(module)
-        db.commit()
-        db.close()
-        return True
+    
+    def create_module(self, module_data: Dict[str, Any]) -> Module:
+        """Create a new module"""
+        with self.db_session() as session:
+            try:
+                module = Module(**module_data)
+                session.add(module)
+                session.commit()
+                session.refresh(module)
+                return module
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating module: {str(e)}")
+    
+    def get_module_by_id(self, module_id: str) -> Optional[Module]:
+        """Get module by ID"""
+        with self.db_session() as session:
+            return session.query(Module).filter(Module.ModuleID == module_id).first()
+    
+    def get_modules_by_course(self, course_id: str) -> List[Module]:
+        """Get all modules for a specific course"""
+        with self.db_session() as session:
+            return session.query(Module).filter(Module.CourseID == course_id).all()
+    
+    def update_module(self, module_id: str, update_data: Dict[str, Any]) -> Optional[Module]:
+        """Update module information"""
+        with self.db_session() as session:
+            module = session.query(Module).filter(Module.ModuleID == module_id).first()
+            if not module:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(module, key):
+                    setattr(module, key, value)
+            
+            session.commit()
+            session.refresh(module)
+            return module
+    
+    def delete_module(self, module_id: str) -> bool:
+        """Delete a module"""
+        with self.db_session() as session:
+            module = session.query(Module).filter(Module.ModuleID == module_id).first()
+            if not module:
+                return False
+            
+            session.delete(module)
+            session.commit()
+            return True
 
 
-class LessonRefService:
+class RequiresService:
+    """Service for course prerequisites (Requires) operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, lesson_id: str) -> LessonRef:
-        lesson = LessonRef(LessonID=lesson_id)
-        db = self.db_session()
-        db.add(lesson)
-        db.commit()
-        db.refresh(lesson)
-        db.close()
-        return lesson
-
-    def get_by_id(self, lesson_id: str) -> Optional[LessonRef]:
-        db = self.db_session()
-        result = db.query(LessonRef).filter(LessonRef.LessonID == lesson_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[LessonRef]:
-        db = self.db_session()
-        result = db.query(LessonRef).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def delete(self, lesson_id: str) -> bool:
-        db = self.db_session()
-        lesson = db.query(LessonRef).filter(LessonRef.LessonID == lesson_id).first()
-        if not lesson:
-            db.close()
-            return False
+    
+    def add_prerequisite(self, course_id: str, required_course_id: str) -> Requires:
+        """Add a prerequisite for a course"""
+        if course_id == required_course_id:
+            raise ValueError("A course cannot be its own prerequisite")
         
-        db.delete(lesson)
-        db.commit()
-        db.close()
-        return True
+        with self.db_session() as session:
+            try:
+                prerequisite = Requires(CourseID=course_id, Required_courseID=required_course_id)
+                session.add(prerequisite)
+                session.commit()
+                session.refresh(prerequisite)
+                return prerequisite
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error adding prerequisite: {str(e)}")
+    
+    def get_prerequisites(self, course_id: str) -> List[Requires]:
+        """Get all prerequisites for a course"""
+        with self.db_session() as session:
+            return session.query(Requires).filter(Requires.CourseID == course_id).all()
+    
+    def remove_prerequisite(self, course_id: str, required_course_id: str) -> bool:
+        """Remove a prerequisite"""
+        with self.db_session() as session:
+            prerequisite = session.query(Requires).filter(
+                Requires.CourseID == course_id,
+                Requires.Required_courseID == required_course_id
+            ).first()
+            
+            if not prerequisite:
+                return False
+            
+            session.delete(prerequisite)
+            session.commit()
+            return True
 
 
 class ContentService:
+    """Service for Content CRUD operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
+    
+    def create_content(self, content_data: Dict[str, Any]) -> Content:
+        """Create new content"""
+        with self.db_session() as session:
+            try:
+                content = Content(**content_data)
+                session.add(content)
+                session.commit()
+                session.refresh(content)
+                return content
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating content: {str(e)}")
+    
+    def get_content_by_id(self, content_id: str) -> Optional[Content]:
+        """Get content by ID"""
+        with self.db_session() as session:
+            return session.query(Content).filter(Content.ContentID == content_id).first()
+    
+    def get_content_by_module(self, module_id: str) -> List[Content]:
+        """Get all content for a specific module"""
+        with self.db_session() as session:
+            return session.query(Content).filter(Content.ModuleID == module_id).all()
+    
+    def update_content(self, content_id: str, update_data: Dict[str, Any]) -> Optional[Content]:
+        """Update content information"""
+        with self.db_session() as session:
+            content = session.query(Content).filter(Content.ContentID == content_id).first()
+            if not content:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(content, key):
+                    setattr(content, key, value)
+            
+            session.commit()
+            session.refresh(content)
+            return content
+    
+    def delete_content(self, content_id: str) -> bool:
+        """Delete content"""
+        with self.db_session() as session:
+            content = session.query(Content).filter(Content.ContentID == content_id).first()
+            if not content:
+                return False
+            
+            session.delete(content)
+            session.commit()
+            return True
 
-    def create(self, content_id: str, module_id: str, title: Optional[str] = None,
-               slides: Optional[str] = None) -> Content:
-        content = Content(
-            ContentID=content_id,
-            ModuleID=module_id,
-            Title=title,
-            Slides=slides
-        )
-        db = self.db_session()
-        db.add(content)
-        db.commit()
-        db.refresh(content)
-        db.close()
-        return content
 
-    def get_by_id(self, content_id: str) -> Optional[Content]:
-        db = self.db_session()
-        result = db.query(Content).filter(Content.ContentID == content_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Content]:
-        db = self.db_session()
-        result = db.query(Content).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_module(self, module_id: str) -> List[Content]:
-        db = self.db_session()
-        result = db.query(Content).filter(Content.ModuleID == module_id).all()
-        db.close()
-        return result
-
-    def update(self, content_id: str, title: Optional[str] = None,
-               slides: Optional[str] = None, module_id: Optional[str] = None) -> Optional[Content]:
-        db = self.db_session()
-        content = db.query(Content).filter(Content.ContentID == content_id).first()
-        if not content:
-            db.close()
-            return None
-        
-        if title is not None:
-            content.Title = title
-        if slides is not None:
-            content.Slides = slides
-        if module_id is not None:
-            content.ModuleID = module_id
-        
-        db.commit()
-        db.refresh(content)
-        db.close()
-        return content
-
-    def delete(self, content_id: str) -> bool:
-        db = self.db_session()
-        content = db.query(Content).filter(Content.ContentID == content_id).first()
-        if not content:
-            db.close()
-            return False
-        
-        db.delete(content)
-        db.commit()
-        db.close()
-        return True
+class LessonRefService:
+    """Service for LessonRef operations"""
+    
+    def __init__(self, db_session: sessionmaker):
+        self.db_session = db_session
+    
+    def create_lesson_ref(self, lesson_id: str) -> LessonRef:
+        """Create a new lesson reference"""
+        with self.db_session() as session:
+            try:
+                lesson_ref = LessonRef(LessonID=lesson_id)
+                session.add(lesson_ref)
+                session.commit()
+                session.refresh(lesson_ref)
+                return lesson_ref
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating lesson reference: {str(e)}")
+    
+    def get_lesson_ref_by_id(self, lesson_id: str) -> Optional[LessonRef]:
+        """Get lesson reference by ID"""
+        with self.db_session() as session:
+            return session.query(LessonRef).filter(LessonRef.LessonID == lesson_id).first()
+    
+    def delete_lesson_ref(self, lesson_id: str) -> bool:
+        """Delete lesson reference"""
+        with self.db_session() as session:
+            lesson_ref = session.query(LessonRef).filter(LessonRef.LessonID == lesson_id).first()
+            if not lesson_ref:
+                return False
+            
+            session.delete(lesson_ref)
+            session.commit()
+            return True
 
 
 class TextService:
+    """Service for Text content operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, text_id: str, content_id: str, text: Optional[str] = None) -> Text:
-        text_obj = Text(
-            TextID=text_id,
-            ContentID=content_id,
-            Text=text
-        )
-        db = self.db_session()
-        db.add(text_obj)
-        db.commit()
-        db.refresh(text_obj)
-        db.close()
-        return text_obj
-
-    def get_by_id(self, text_id: str) -> Optional[Text]:
-        db = self.db_session()
-        result = db.query(Text).filter(Text.TextID == text_id).first()
-        db.close()
-        return result
-
-    def get_by_content_id(self, content_id: str) -> Optional[Text]:
-        db = self.db_session()
-        result = db.query(Text).filter(Text.ContentID == content_id).first()
-        db.close()
-        return result
-
-    def update(self, text_id: str, text: Optional[str] = None) -> Optional[Text]:
-        db = self.db_session()
-        text_obj = db.query(Text).filter(Text.TextID == text_id).first()
-        if not text_obj:
-            db.close()
-            return None
-        
-        if text is not None:
-            text_obj.Text = text
-        
-        db.commit()
-        db.refresh(text_obj)
-        db.close()
-        return text_obj
-
-    def delete(self, text_id: str) -> bool:
-        db = self.db_session()
-        text_obj = db.query(Text).filter(Text.TextID == text_id).first()
-        if not text_obj:
-            db.close()
-            return False
-        
-        db.delete(text_obj)
-        db.commit()
-        db.close()
-        return True
+    
+    def create_text(self, text_data: Dict[str, Any]) -> Text:
+        """Create new text content"""
+        with self.db_session() as session:
+            try:
+                text = Text(**text_data)
+                session.add(text)
+                session.commit()
+                session.refresh(text)
+                return text
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating text: {str(e)}")
+    
+    def get_text_by_content_id(self, content_id: str) -> Optional[Text]:
+        """Get text by content ID"""
+        with self.db_session() as session:
+            return session.query(Text).filter(Text.ContentID == content_id).first()
+    
+    def update_text(self, content_id: str, text_id: str, update_data: Dict[str, Any]) -> Optional[Text]:
+        """Update text content"""
+        with self.db_session() as session:
+            text = session.query(Text).filter(
+                Text.ContentID == content_id,
+                Text.TextID == text_id
+            ).first()
+            
+            if not text:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(text, key):
+                    setattr(text, key, value)
+            
+            session.commit()
+            session.refresh(text)
+            return text
+    
+    def delete_text(self, content_id: str, text_id: str) -> bool:
+        """Delete text content"""
+        with self.db_session() as session:
+            text = session.query(Text).filter(
+                Text.ContentID == content_id,
+                Text.TextID == text_id
+            ).first()
+            
+            if not text:
+                return False
+            
+            session.delete(text)
+            session.commit()
+            return True
 
 
 class VideoService:
+    """Service for Video content operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, video_id: str, content_id: str, video: Optional[str] = None) -> Video:
-        video_obj = Video(
-            VideoID=video_id,
-            ContentID=content_id,
-            Video=video
-        )
-        db = self.db_session()
-        db.add(video_obj)
-        db.commit()
-        db.refresh(video_obj)
-        db.close()
-        return video_obj
-
-    def get_by_id(self, video_id: str) -> Optional[Video]:
-        db = self.db_session()
-        result = db.query(Video).filter(Video.VideoID == video_id).first()
-        db.close()
-        return result
-
-    def get_by_content_id(self, content_id: str) -> Optional[Video]:
-        db = self.db_session()
-        result = db.query(Video).filter(Video.ContentID == content_id).first()
-        db.close()
-        return result
-
-    def update(self, video_id: str, video: Optional[str] = None) -> Optional[Video]:
-        db = self.db_session()
-        video_obj = db.query(Video).filter(Video.VideoID == video_id).first()
-        if not video_obj:
-            db.close()
-            return None
-        
-        if video is not None:
-            video_obj.Video = video
-        
-        db.commit()
-        db.refresh(video_obj)
-        db.close()
-        return video_obj
-
-    def delete(self, video_id: str) -> bool:
-        db = self.db_session()
-        video_obj = db.query(Video).filter(Video.VideoID == video_id).first()
-        if not video_obj:
-            db.close()
-            return False
-        
-        db.delete(video_obj)
-        db.commit()
-        db.close()
-        return True
+    
+    def create_video(self, video_data: Dict[str, Any]) -> Video:
+        """Create new video content"""
+        with self.db_session() as session:
+            try:
+                video = Video(**video_data)
+                session.add(video)
+                session.commit()
+                session.refresh(video)
+                return video
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating video: {str(e)}")
+    
+    def get_video_by_content_id(self, content_id: str) -> Optional[Video]:
+        """Get video by content ID"""
+        with self.db_session() as session:
+            return session.query(Video).filter(Video.ContentID == content_id).first()
+    
+    def update_video(self, content_id: str, video_id: str, update_data: Dict[str, Any]) -> Optional[Video]:
+        """Update video content"""
+        with self.db_session() as session:
+            video = session.query(Video).filter(
+                Video.ContentID == content_id,
+                Video.VideoID == video_id
+            ).first()
+            
+            if not video:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(video, key):
+                    setattr(video, key, value)
+            
+            session.commit()
+            session.refresh(video)
+            return video
+    
+    def delete_video(self, content_id: str, video_id: str) -> bool:
+        """Delete video content"""
+        with self.db_session() as session:
+            video = session.query(Video).filter(
+                Video.ContentID == content_id,
+                Video.VideoID == video_id
+            ).first()
+            
+            if not video:
+                return False
+            
+            session.delete(video)
+            session.commit()
+            return True
 
 
 class ImageService:
+    """Service for Image content operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
+    
+    def create_image(self, image_data: Dict[str, Any]) -> Image:
+        """Create new image content"""
+        with self.db_session() as session:
+            try:
+                image = Image(**image_data)
+                session.add(image)
+                session.commit()
+                session.refresh(image)
+                return image
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating image: {str(e)}")
+    
+    def get_image_by_content_id(self, content_id: str) -> Optional[Image]:
+        """Get image by content ID"""
+        with self.db_session() as session:
+            return session.query(Image).filter(Image.ContentID == content_id).first()
+    
+    def update_image(self, content_id: str, image_id: str, update_data: Dict[str, Any]) -> Optional[Image]:
+        """Update image content"""
+        with self.db_session() as session:
+            image = session.query(Image).filter(
+                Image.ContentID == content_id,
+                Image.ImageID == image_id
+            ).first()
+            
+            if not image:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(image, key):
+                    setattr(image, key, value)
+            
+            session.commit()
+            session.refresh(image)
+            return image
+    
+    def delete_image(self, content_id: str, image_id: str) -> bool:
+        """Delete image content"""
+        with self.db_session() as session:
+            image = session.query(Image).filter(
+                Image.ContentID == content_id,
+                Image.ImageID == image_id
+            ).first()
+            
+            if not image:
+                return False
+            
+            session.delete(image)
+            session.commit()
+            return True
 
-    def create(self, image_id: str, content_id: str, image: Optional[str] = None) -> Image:
-        image_obj = Image(
-            ImageID=image_id,
-            ContentID=content_id,
-            Image=image
-        )
-        db = self.db_session()
-        db.add(image_obj)
-        db.commit()
-        db.refresh(image_obj)
-        db.close()
-        return image_obj
 
-    def get_by_id(self, image_id: str) -> Optional[Image]:
-        db = self.db_session()
-        result = db.query(Image).filter(Image.ImageID == image_id).first()
-        db.close()
-        return result
-
-    def get_by_content_id(self, content_id: str) -> Optional[Image]:
-        db = self.db_session()
-        result = db.query(Image).filter(Image.ContentID == content_id).first()
-        db.close()
-        return result
-
-    def update(self, image_id: str, image: Optional[str] = None) -> Optional[Image]:
-        db = self.db_session()
-        image_obj = db.query(Image).filter(Image.ImageID == image_id).first()
-        if not image_obj:
-            db.close()
-            return None
-        
-        if image is not None:
-            image_obj.Image = image
-        
-        db.commit()
-        db.refresh(image_obj)
-        db.close()
-        return image_obj
-
-    def delete(self, image_id: str) -> bool:
-        db = self.db_session()
-        image_obj = db.query(Image).filter(Image.ImageID == image_id).first()
-        if not image_obj:
-            db.close()
-            return False
-        
-        db.delete(image_obj)
-        db.commit()
-        db.close()
-        return True
-
-
-class AssignmentService:
+class CategoryService:
+    """Service for Category operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, ass_id: str, module_id: str, title: str,
-               description: Optional[str] = None, deadline: Optional[datetime] = None) -> Assignment:
-        assignment = Assignment(
-            AssID=ass_id,
-            ModuleID=module_id,
-            Title=title,
-            Description=description,
-            Deadline=deadline or datetime.utcnow()
-        )
-        db = self.db_session()
-        db.add(assignment)
-        db.commit()
-        db.refresh(assignment)
-        db.close()
-        return assignment
-
-    def get_by_id(self, ass_id: str) -> Optional[Assignment]:
-        db = self.db_session()
-        result = db.query(Assignment).filter(Assignment.AssID == ass_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Assignment]:
-        db = self.db_session()
-        result = db.query(Assignment).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_module(self, module_id: str) -> List[Assignment]:
-        db = self.db_session()
-        result = db.query(Assignment).filter(Assignment.ModuleID == module_id).all()
-        db.close()
-        return result
-
-    def update(self, ass_id: str, title: Optional[str] = None,
-               description: Optional[str] = None, deadline: Optional[datetime] = None) -> Optional[Assignment]:
-        db = self.db_session()
-        assignment = db.query(Assignment).filter(Assignment.AssID == ass_id).first()
-        if not assignment:
-            db.close()
-            return None
-        
-        if title is not None:
-            assignment.Title = title
-        if description is not None:
-            assignment.Description = description
-        if deadline is not None:
-            assignment.Deadline = deadline
-        
-        db.commit()
-        db.refresh(assignment)
-        db.close()
-        return assignment
-
-    def delete(self, ass_id: str) -> bool:
-        db = self.db_session()
-        assignment = db.query(Assignment).filter(Assignment.AssID == ass_id).first()
-        if not assignment:
-            db.close()
-            return False
-        
-        db.delete(assignment)
-        db.commit()
-        db.close()
-        return True
-
-
-class QuizService:
-    def __init__(self, db_session: sessionmaker):
-        self.db_session = db_session
-
-    def create(self, quiz_id: str, module_id: str, title: str,
-               time_limit: Optional[int] = None, num_attempt: int = 1) -> Quiz:
-        quiz = Quiz(
-            QuizID=quiz_id,
-            ModuleID=module_id,
-            Title=title,
-            Time_limit=time_limit,
-            Num_attempt=num_attempt
-        )
-        db = self.db_session()
-        db.add(quiz)
-        db.commit()
-        db.refresh(quiz)
-        db.close()
-        return quiz
-
-    def get_by_id(self, quiz_id: str) -> Optional[Quiz]:
-        db = self.db_session()
-        result = db.query(Quiz).filter(Quiz.QuizID == quiz_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Quiz]:
-        db = self.db_session()
-        result = db.query(Quiz).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_module(self, module_id: str) -> List[Quiz]:
-        db = self.db_session()
-        result = db.query(Quiz).filter(Quiz.ModuleID == module_id).all()
-        db.close()
-        return result
-
-    def update(self, quiz_id: str, title: Optional[str] = None,
-               time_limit: Optional[int] = None, num_attempt: Optional[int] = None) -> Optional[Quiz]:
-        db = self.db_session()
-        quiz = db.query(Quiz).filter(Quiz.QuizID == quiz_id).first()
-        if not quiz:
-            db.close()
-            return None
-        
-        if title is not None:
-            quiz.Title = title
-        if time_limit is not None:
-            quiz.Time_limit = time_limit
-        if num_attempt is not None:
-            quiz.Num_attempt = num_attempt
-        
-        db.commit()
-        db.refresh(quiz)
-        db.close()
-        return quiz
-
-    def delete(self, quiz_id: str) -> bool:
-        db = self.db_session()
-        quiz = db.query(Quiz).filter(Quiz.QuizID == quiz_id).first()
-        if not quiz:
-            db.close()
-            return False
-        
-        db.delete(quiz)
-        db.commit()
-        db.close()
-        return True
-
-
-class QuestionService:
-    def __init__(self, db_session: sessionmaker):
-        self.db_session = db_session
-
-    def create(self, question_id: str, quiz_id: str, content: str,
-               correct_answer: str) -> Question:
-        question = Question(
-            QuestionID=question_id,
-            QuizID=quiz_id,
-            Content=content,
-            Correct_answer=correct_answer
-        )
-        db = self.db_session()
-        db.add(question)
-        db.commit()
-        db.refresh(question)
-        db.close()
-        return question
-
-    def get_by_id(self, question_id: str) -> Optional[Question]:
-        db = self.db_session()
-        result = db.query(Question).filter(Question.QuestionID == question_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Question]:
-        db = self.db_session()
-        result = db.query(Question).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_quiz(self, quiz_id: str) -> List[Question]:
-        db = self.db_session()
-        result = db.query(Question).filter(Question.QuizID == quiz_id).all()
-        db.close()
-        return result
-
-    def update(self, question_id: str, content: Optional[str] = None,
-               correct_answer: Optional[str] = None) -> Optional[Question]:
-        db = self.db_session()
-        question = db.query(Question).filter(Question.QuestionID == question_id).first()
-        if not question:
-            db.close()
-            return None
-        
-        if content is not None:
-            question.Content = content
-        if correct_answer is not None:
-            question.Correct_answer = correct_answer
-        
-        db.commit()
-        db.refresh(question)
-        db.close()
-        return question
-
-    def delete(self, question_id: str) -> bool:
-        db = self.db_session()
-        question = db.query(Question).filter(Question.QuestionID == question_id).first()
-        if not question:
-            db.close()
-            return False
-        
-        db.delete(question)
-        db.commit()
-        db.close()
-        return True
-
-
-class AnswerService:
-    def __init__(self, db_session: sessionmaker):
-        self.db_session = db_session
-
-    def create(self, answer_id: str, question_id: str, quiz_id: str, answer: str) -> Answer:
-        answer_obj = Answer(
-            AnswerID=answer_id,
-            QuestionID=question_id,
-            QuizID=quiz_id,
-            Answer=answer
-        )
-        db = self.db_session()
-        db.add(answer_obj)
-        db.commit()
-        db.refresh(answer_obj)
-        db.close()
-        return answer_obj
-
-    def get_by_id(self, answer_id: str) -> Optional[Answer]:
-        db = self.db_session()
-        result = db.query(Answer).filter(Answer.AnswerID == answer_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Answer]:
-        db = self.db_session()
-        result = db.query(Answer).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_question(self, question_id: str) -> List[Answer]:
-        db = self.db_session()
-        result = db.query(Answer).filter(Answer.QuestionID == question_id).all()
-        db.close()
-        return result
-
-    def update(self, answer_id: str, answer: Optional[str] = None) -> Optional[Answer]:
-        db = self.db_session()
-        answer_obj = db.query(Answer).filter(Answer.AnswerID == answer_id).first()
-        if not answer_obj:
-            db.close()
-            return None
-        
-        if answer is not None:
-            answer_obj.Answer = answer
-        
-        db.commit()
-        db.refresh(answer_obj)
-        db.close()
-        return answer_obj
-
-    def delete(self, answer_id: str) -> bool:
-        db = self.db_session()
-        answer_obj = db.query(Answer).filter(Answer.AnswerID == answer_id).first()
-        if not answer_obj:
-            db.close()
-            return False
-        
-        db.delete(answer_obj)
-        db.commit()
-        db.close()
-        return True
+    
+    def add_category(self, course_id: str, category: str) -> Category:
+        """Add a category to a course"""
+        with self.db_session() as session:
+            try:
+                cat = Category(CourseID=course_id, Category=category)
+                session.add(cat)
+                session.commit()
+                session.refresh(cat)
+                return cat
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error adding category: {str(e)}")
+    
+    def get_categories_by_course(self, course_id: str) -> List[Category]:
+        """Get all categories for a course"""
+        with self.db_session() as session:
+            return session.query(Category).filter(Category.CourseID == course_id).all()
+    
+    def get_courses_by_category(self, category: str) -> List[Category]:
+        """Get all courses in a specific category"""
+        with self.db_session() as session:
+            return session.query(Category).filter(Category.Category == category).all()
+    
+    def remove_category(self, course_id: str, category: str) -> bool:
+        """Remove a category from a course"""
+        with self.db_session() as session:
+            cat = session.query(Category).filter(
+                Category.CourseID == course_id,
+                Category.Category == category
+            ).first()
+            
+            if not cat:
+                return False
+            
+            session.delete(cat)
+            session.commit()
+            return True

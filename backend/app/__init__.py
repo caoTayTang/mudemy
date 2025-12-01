@@ -11,8 +11,13 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(routes_utils.router, tags=["Utils"])
-    app.include_router(routes_course.router, prefix="/api", tags=["Course"])
     app.include_router(routes_login.router, prefix="/api/auth", tags=["Login"])
-    #app.include_router(routes_report.router, prefix="/api", tags=["Report"])
+    app.include_router(routes_user.router, prefix="/api", tags=["User"])
+    app.include_router(routes_course.router, prefix="/api", tags=["Course"])
+    
 
+    app.include_router(routes_assessment.router, prefix="/api", tags=["Assessment"])
+    app.include_router(routes_enrollment.router, prefix="/api", tags=["Enrollment"])
+    app.include_router(routes_resource.router, prefix="/api", tags=["Resource"])
+    
     return app

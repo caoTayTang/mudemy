@@ -1,314 +1,445 @@
 from sqlalchemy.orm import sessionmaker
-from typing import List, Optional
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
+from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from ..models.models import Enrollment, Payment, Certificate
 
+
 class EnrollmentService:
+    """Service for Enrollment CRUD operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, enrollment_id: str, course_id: str, payment_id: str,
-               student_id: str, status: str = 'Active') -> Enrollment:
-        enrollment = Enrollment(
-            EnrollmentID=enrollment_id,
-            CourseID=course_id,
-            PaymentID=payment_id,
-            StudentID=student_id,
-            Status=status,
-            Enroll_date=datetime.utcnow()
-        )
-        db = self.db_session()
-        db.add(enrollment)
-        db.commit()
-        db.refresh(enrollment)
-        db.close()
-        return enrollment
-
-    def get_by_id(self, enrollment_id: str) -> Optional[Enrollment]:
-        db = self.db_session()
-        result = db.query(Enrollment).filter(Enrollment.EnrollmentID == enrollment_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Enrollment]:
-        db = self.db_session()
-        result = db.query(Enrollment).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_student(self, student_id: str) -> List[Enrollment]:
-        db = self.db_session()
-        result = db.query(Enrollment).filter(Enrollment.StudentID == student_id).all()
-        db.close()
-        return result
-
-    def get_by_course(self, course_id: str) -> List[Enrollment]:
-        db = self.db_session()
-        result = db.query(Enrollment).filter(Enrollment.CourseID == course_id).all()
-        db.close()
-        return result
-
-    def get_by_status(self, status: str) -> List[Enrollment]:
-        db = self.db_session()
-        result = db.query(Enrollment).filter(Enrollment.Status == status).all()
-        db.close()
-        return result
-
-    def get_by_student_and_course(self, student_id: str, course_id: str) -> Optional[Enrollment]:
-        db = self.db_session()
-        result = db.query(Enrollment).filter(
-            Enrollment.StudentID == student_id,
-            Enrollment.CourseID == course_id
-        ).first()
-        db.close()
-        return result
-
-    def update(self, enrollment_id: str, status: Optional[str] = None) -> Optional[Enrollment]:
-        db = self.db_session()
-        enrollment = db.query(Enrollment).filter(Enrollment.EnrollmentID == enrollment_id).first()
-        if not enrollment:
-            db.close()
-            return None
-        
-        if status is not None:
+    
+    def create_enrollment(self, enrollment_data: Dict[str, Any]) -> Enrollment:
+        """Create a new enrollment"""
+        with self.db_session() as session:
+            try:
+                enrollment = Enrollment(**enrollment_data)
+                session.add(enrollment)
+                session.commit()
+                session.refresh(enrollment)
+                return enrollment
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating enrollment: {str(e)}")
+    
+    def get_enrollment_by_id(self, enrollment_id: str) -> Optional[Enrollment]:
+        """Get enrollment by ID"""
+        with self.db_session() as session:
+            return session.query(Enrollment).filter(
+                Enrollment.EnrollmentID == enrollment_id
+            ).first()
+    
+    def get_enrollment(self, enrollment_id: str, course_id: str, 
+                       payment_id: str, student_id: str) -> Optional[Enrollment]:
+        """Get enrollment by composite primary key"""
+        with self.db_session() as session:
+            return session.query(Enrollment).filter(
+                Enrollment.EnrollmentID == enrollment_id,
+                Enrollment.CourseID == course_id,
+                Enrollment.PaymentID == payment_id,
+                Enrollment.StudentID == student_id
+            ).first()
+    
+    def get_student_enrollments(self, student_id: str) -> List[Enrollment]:
+        """Get all enrollments for a student"""
+        with self.db_session() as session:
+            return session.query(Enrollment).filter(
+                Enrollment.StudentID == student_id
+            ).all()
+    
+    def get_course_enrollments(self, course_id: str) -> List[Enrollment]:
+        """Get all enrollments for a course"""
+        with self.db_session() as session:
+            return session.query(Enrollment).filter(
+                Enrollment.CourseID == course_id
+            ).all()
+    
+    def get_active_enrollments(self, student_id: str) -> List[Enrollment]:
+        """Get all active enrollments for a student"""
+        with self.db_session() as session:
+            return session.query(Enrollment).filter(
+                Enrollment.StudentID == student_id,
+                Enrollment.Status == 'Active'
+            ).all()
+    
+    def get_completed_enrollments(self, student_id: str) -> List[Enrollment]:
+        """Get all completed enrollments for a student"""
+        with self.db_session() as session:
+            return session.query(Enrollment).filter(
+                Enrollment.StudentID == student_id,
+                Enrollment.Status == 'Completed'
+            ).all()
+    
+    def is_student_enrolled(self, student_id: str, course_id: str) -> bool:
+        """Check if a student is enrolled in a course"""
+        with self.db_session() as session:
+            enrollment = session.query(Enrollment).filter(
+                Enrollment.StudentID == student_id,
+                Enrollment.CourseID == course_id
+            ).first()
+            return enrollment is not None
+    
+    def update_enrollment_status(self, enrollment_id: str, status: str) -> Optional[Enrollment]:
+        """Update enrollment status"""
+        with self.db_session() as session:
+            enrollment = session.query(Enrollment).filter(
+                Enrollment.EnrollmentID == enrollment_id
+            ).first()
+            
+            if not enrollment:
+                return None
+            
+            valid_statuses = ['Active', 'Completed', 'Dropped', 'Suspended']
+            if status not in valid_statuses:
+                raise ValueError(f"Invalid status. Must be one of: {', '.join(valid_statuses)}")
+            
             enrollment.Status = status
-        
-        db.commit()
-        db.refresh(enrollment)
-        db.close()
-        return enrollment
-
-    def delete(self, enrollment_id: str) -> bool:
-        db = self.db_session()
-        enrollment = db.query(Enrollment).filter(Enrollment.EnrollmentID == enrollment_id).first()
-        if not enrollment:
-            db.close()
-            return False
-        
-        db.delete(enrollment)
-        db.commit()
-        db.close()
-        return True
-
-    def count_by_course(self, course_id: str) -> int:
-        db = self.db_session()
-        count = db.query(Enrollment).filter(Enrollment.CourseID == course_id).count()
-        db.close()
-        return count
+            session.commit()
+            session.refresh(enrollment)
+            return enrollment
+    
+    def update_enrollment(self, enrollment_id: str, update_data: Dict[str, Any]) -> Optional[Enrollment]:
+        """Update enrollment information"""
+        with self.db_session() as session:
+            enrollment = session.query(Enrollment).filter(
+                Enrollment.EnrollmentID == enrollment_id
+            ).first()
+            
+            if not enrollment:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(enrollment, key):
+                    setattr(enrollment, key, value)
+            
+            session.commit()
+            session.refresh(enrollment)
+            return enrollment
+    
+    def delete_enrollment(self, enrollment_id: str) -> bool:
+        """Delete an enrollment"""
+        with self.db_session() as session:
+            enrollment = session.query(Enrollment).filter(
+                Enrollment.EnrollmentID == enrollment_id
+            ).first()
+            
+            if not enrollment:
+                return False
+            
+            session.delete(enrollment)
+            session.commit()
+            return True
+    
+    def get_enrollment_count_by_course(self, course_id: str) -> int:
+        """Get total enrollment count for a course"""
+        with self.db_session() as session:
+            return session.query(Enrollment).filter(
+                Enrollment.CourseID == course_id
+            ).count()
+    
+    def get_enrollment_stats(self, student_id: str) -> Dict[str, Any]:
+        """Get enrollment statistics for a student"""
+        with self.db_session() as session:
+            all_enrollments = session.query(Enrollment).filter(
+                Enrollment.StudentID == student_id
+            ).all()
+            
+            active = sum(1 for e in all_enrollments if e.Status == 'Active')
+            completed = sum(1 for e in all_enrollments if e.Status == 'Completed')
+            dropped = sum(1 for e in all_enrollments if e.Status == 'Dropped')
+            suspended = sum(1 for e in all_enrollments if e.Status == 'Suspended')
+            
+            return {
+                'total_enrollments': len(all_enrollments),
+                'active': active,
+                'completed': completed,
+                'dropped': dropped,
+                'suspended': suspended
+            }
 
 
 class PaymentService:
+    """Service for Payment CRUD operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, payment_id: str, user_id: str, amount: int,
-               payment_method: Optional[str] = None) -> Payment:
-        payment = Payment(
-            PaymentID=payment_id,
-            UserID=user_id,
-            Amount=amount,
-            Payment_method=payment_method,
-            Payment_date=datetime.utcnow()
-        )
-        db = self.db_session()
-        db.add(payment)
-        db.commit()
-        db.refresh(payment)
-        db.close()
-        return payment
-
-    def get_by_id(self, payment_id: str) -> Optional[Payment]:
-        db = self.db_session()
-        result = db.query(Payment).filter(Payment.PaymentID == payment_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Payment]:
-        db = self.db_session()
-        result = db.query(Payment).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_user(self, user_id: str) -> List[Payment]:
-        db = self.db_session()
-        result = db.query(Payment).filter(Payment.UserID == user_id).all()
-        db.close()
-        return result
-
-    def get_by_method(self, payment_method: str) -> List[Payment]:
-        db = self.db_session()
-        result = db.query(Payment).filter(Payment.Payment_method == payment_method).all()
-        db.close()
-        return result
-
-    def get_by_date_range(self, start_date: datetime, end_date: datetime) -> List[Payment]:
-        db = self.db_session()
-        result = db.query(Payment).filter(
-            Payment.Payment_date >= start_date,
-            Payment.Payment_date <= end_date
-        ).all()
-        db.close()
-        return result
-
-    def update(self, payment_id: str, amount: Optional[int] = None,
-               payment_method: Optional[str] = None) -> Optional[Payment]:
-        db = self.db_session()
-        payment = db.query(Payment).filter(Payment.PaymentID == payment_id).first()
-        if not payment:
-            db.close()
-            return None
-        
-        if amount is not None:
-            payment.Amount = amount
-        if payment_method is not None:
-            payment.Payment_method = payment_method
-        
-        db.commit()
-        db.refresh(payment)
-        db.close()
-        return payment
-
-    def delete(self, payment_id: str) -> bool:
-        db = self.db_session()
-        payment = db.query(Payment).filter(Payment.PaymentID == payment_id).first()
-        if not payment:
-            db.close()
-            return False
-        
-        db.delete(payment)
-        db.commit()
-        db.close()
-        return True
-
-    def get_total_by_user(self, user_id: str) -> int:
-        db = self.db_session()
-        result = db.query(Payment).filter(Payment.UserID == user_id).all()
-        total = sum(payment.Amount for payment in result)
-        db.close()
-        return total
+    
+    def create_payment(self, payment_data: Dict[str, Any]) -> Payment:
+        """Create a new payment"""
+        with self.db_session() as session:
+            try:
+                payment = Payment(**payment_data)
+                session.add(payment)
+                session.commit()
+                session.refresh(payment)
+                return payment
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating payment: {str(e)}")
+    
+    def get_payment_by_id(self, payment_id: str) -> Optional[Payment]:
+        """Get payment by ID"""
+        with self.db_session() as session:
+            return session.query(Payment).filter(Payment.PaymentID == payment_id).first()
+    
+    def get_payments_by_user(self, user_id: str) -> List[Payment]:
+        """Get all payments made by a user"""
+        with self.db_session() as session:
+            return session.query(Payment).filter(Payment.UserID == user_id).all()
+    
+    def get_payments_by_method(self, payment_method: str) -> List[Payment]:
+        """Get all payments by payment method"""
+        with self.db_session() as session:
+            return session.query(Payment).filter(Payment.Payment_method == payment_method).all()
+    
+    def get_payments_by_date_range(self, start_date: datetime, end_date: datetime) -> List[Payment]:
+        """Get payments within a date range"""
+        with self.db_session() as session:
+            return session.query(Payment).filter(
+                Payment.Payment_date >= start_date,
+                Payment.Payment_date <= end_date
+            ).all()
+    
+    def get_all_payments(self, skip: int = 0, limit: int = 100) -> List[Payment]:
+        """Get all payments with pagination"""
+        with self.db_session() as session:
+            return session.query(Payment).offset(skip).limit(limit).all()
+    
+    def update_payment(self, payment_id: str, update_data: Dict[str, Any]) -> Optional[Payment]:
+        """Update payment information"""
+        with self.db_session() as session:
+            payment = session.query(Payment).filter(Payment.PaymentID == payment_id).first()
+            if not payment:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(payment, key):
+                    setattr(payment, key, value)
+            
+            session.commit()
+            session.refresh(payment)
+            return payment
+    
+    def delete_payment(self, payment_id: str) -> bool:
+        """Delete a payment"""
+        with self.db_session() as session:
+            payment = session.query(Payment).filter(Payment.PaymentID == payment_id).first()
+            if not payment:
+                return False
+            
+            session.delete(payment)
+            session.commit()
+            return True
+    
+    def get_total_revenue(self) -> int:
+        """Get total revenue from all payments"""
+        with self.db_session() as session:
+            result = session.query(func.sum(Payment.Amount)).scalar()
+            return int(result) if result else 0
+    
+    def get_revenue_by_user(self, user_id: str) -> int:
+        """Get total amount paid by a user"""
+        with self.db_session() as session:
+            result = session.query(func.sum(Payment.Amount)).filter(
+                Payment.UserID == user_id
+            ).scalar()
+            return int(result) if result else 0
+    
+    def get_revenue_by_date_range(self, start_date: datetime, end_date: datetime) -> int:
+        """Get total revenue within a date range"""
+        with self.db_session() as session:
+            result = session.query(func.sum(Payment.Amount)).filter(
+                Payment.Payment_date >= start_date,
+                Payment.Payment_date <= end_date
+            ).scalar()
+            return int(result) if result else 0
+    
+    def get_payment_statistics(self) -> Dict[str, Any]:
+        """Get payment statistics"""
+        with self.db_session() as session:
+            total_payments = session.query(Payment).count()
+            total_revenue = session.query(func.sum(Payment.Amount)).scalar() or 0
+            avg_payment = session.query(func.avg(Payment.Amount)).scalar() or 0
+            
+            methods = session.query(
+                Payment.Payment_method,
+                func.count(Payment.PaymentID)
+            ).group_by(Payment.Payment_method).all()
+            
+            return {
+                'total_payments': total_payments,
+                'total_revenue': int(total_revenue),
+                'average_payment': float(avg_payment),
+                'payment_methods': {method: count for method, count in methods}
+            }
 
 
 class CertificateService:
+    """Service for Certificate CRUD operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, certificate_id: str, course_id: str, student_id: str,
-               certificate_number: str, expiry_date: Optional[date] = None,
-               issue_date: Optional[date] = None) -> Certificate:
-        certificate = Certificate(
-            CertificateID=certificate_id,
-            CourseID=course_id,
-            StudentID=student_id,
-            Certificate_number=certificate_number,
-            Expiry_date=expiry_date,
-            Issue_date=issue_date or datetime.utcnow().date()
-        )
-        db = self.db_session()
-        db.add(certificate)
-        db.commit()
-        db.refresh(certificate)
-        db.close()
-        return certificate
-
-    def get_by_id(self, certificate_id: str) -> Optional[Certificate]:
-        db = self.db_session()
-        result = db.query(Certificate).filter(Certificate.CertificateID == certificate_id).first()
-        db.close()
-        return result
-
-    def get_by_number(self, certificate_number: str) -> Optional[Certificate]:
-        db = self.db_session()
-        result = db.query(Certificate).filter(Certificate.Certificate_number == certificate_number).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Certificate]:
-        db = self.db_session()
-        result = db.query(Certificate).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_student(self, student_id: str) -> List[Certificate]:
-        db = self.db_session()
-        result = db.query(Certificate).filter(Certificate.StudentID == student_id).all()
-        db.close()
-        return result
-
-    def get_by_course(self, course_id: str) -> List[Certificate]:
-        db = self.db_session()
-        result = db.query(Certificate).filter(Certificate.CourseID == course_id).all()
-        db.close()
-        return result
-
-    def get_by_student_and_course(self, student_id: str, course_id: str) -> Optional[Certificate]:
-        db = self.db_session()
-        result = db.query(Certificate).filter(
-            Certificate.StudentID == student_id,
-            Certificate.CourseID == course_id
-        ).first()
-        db.close()
-        return result
-
-    def get_expired(self) -> List[Certificate]:
-        db = self.db_session()
-        today = datetime.utcnow().date()
-        result = db.query(Certificate).filter(
-            Certificate.Expiry_date < today
-        ).all()
-        db.close()
-        return result
-
-    def get_valid(self) -> List[Certificate]:
-        db = self.db_session()
-        today = datetime.utcnow().date()
-        result = db.query(Certificate).filter(
-            (Certificate.Expiry_date >= today) | (Certificate.Expiry_date == None)
-        ).all()
-        db.close()
-        return result
-
-    def update(self, certificate_id: str, expiry_date: Optional[date] = None,
-               certificate_number: Optional[str] = None) -> Optional[Certificate]:
-        db = self.db_session()
-        certificate = db.query(Certificate).filter(Certificate.CertificateID == certificate_id).first()
-        if not certificate:
-            db.close()
-            return None
-        
-        if expiry_date is not None:
-            certificate.Expiry_date = expiry_date
-        if certificate_number is not None:
-            certificate.Certificate_number = certificate_number
-        
-        db.commit()
-        db.refresh(certificate)
-        db.close()
-        return certificate
-
-    def delete(self, certificate_id: str) -> bool:
-        db = self.db_session()
-        certificate = db.query(Certificate).filter(Certificate.CertificateID == certificate_id).first()
-        if not certificate:
-            db.close()
-            return False
-        
-        db.delete(certificate)
-        db.commit()
-        db.close()
-        return True
-
-    def is_valid(self, certificate_id: str) -> bool:
-        db = self.db_session()
-        certificate = db.query(Certificate).filter(Certificate.CertificateID == certificate_id).first()
-        if not certificate:
-            db.close()
-            return False
-        
-        if certificate.Expiry_date is None:
-            db.close()
+    
+    def create_certificate(self, certificate_data: Dict[str, Any]) -> Certificate:
+        """Create a new certificate"""
+        with self.db_session() as session:
+            try:
+                certificate = Certificate(**certificate_data)
+                session.add(certificate)
+                session.commit()
+                session.refresh(certificate)
+                return certificate
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating certificate: {str(e)}")
+    
+    def get_certificate_by_id(self, certificate_id: str) -> Optional[Certificate]:
+        """Get certificate by ID"""
+        with self.db_session() as session:
+            return session.query(Certificate).filter(
+                Certificate.CertificateID == certificate_id
+            ).first()
+    
+    def get_certificate(self, certificate_id: str, course_id: str, 
+                        student_id: str) -> Optional[Certificate]:
+        """Get certificate by composite primary key"""
+        with self.db_session() as session:
+            return session.query(Certificate).filter(
+                Certificate.CertificateID == certificate_id,
+                Certificate.CourseID == course_id,
+                Certificate.StudentID == student_id
+            ).first()
+    
+    def get_student_certificates(self, student_id: str) -> List[Certificate]:
+        """Get all certificates for a student"""
+        with self.db_session() as session:
+            return session.query(Certificate).filter(
+                Certificate.StudentID == student_id
+            ).all()
+    
+    def get_course_certificates(self, course_id: str) -> List[Certificate]:
+        """Get all certificates issued for a course"""
+        with self.db_session() as session:
+            return session.query(Certificate).filter(
+                Certificate.CourseID == course_id
+            ).all()
+    
+    def get_certificate_by_number(self, certificate_number: str) -> Optional[Certificate]:
+        """Get certificate by certificate number"""
+        with self.db_session() as session:
+            return session.query(Certificate).filter(
+                Certificate.Certificate_number == certificate_number
+            ).first()
+    
+    def has_certificate(self, student_id: str, course_id: str) -> bool:
+        """Check if a student has a certificate for a course"""
+        with self.db_session() as session:
+            certificate = session.query(Certificate).filter(
+                Certificate.StudentID == student_id,
+                Certificate.CourseID == course_id
+            ).first()
+            return certificate is not None
+    
+    def update_certificate(self, certificate_id: str, update_data: Dict[str, Any]) -> Optional[Certificate]:
+        """Update certificate information"""
+        with self.db_session() as session:
+            certificate = session.query(Certificate).filter(
+                Certificate.CertificateID == certificate_id
+            ).first()
+            
+            if not certificate:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(certificate, key):
+                    setattr(certificate, key, value)
+            
+            session.commit()
+            session.refresh(certificate)
+            return certificate
+    
+    def delete_certificate(self, certificate_id: str) -> bool:
+        """Delete a certificate"""
+        with self.db_session() as session:
+            certificate = session.query(Certificate).filter(
+                Certificate.CertificateID == certificate_id
+            ).first()
+            
+            if not certificate:
+                return False
+            
+            session.delete(certificate)
+            session.commit()
             return True
-        
-        today = datetime.utcnow().date()
-        is_valid = certificate.Expiry_date >= today
-        db.close()
-        return is_valid
+    
+    def get_active_certificates(self, student_id: str) -> List[Certificate]:
+        """Get all non-expired certificates for a student"""
+        with self.db_session() as session:
+            today = date.today()
+            return session.query(Certificate).filter(
+                Certificate.StudentID == student_id,
+                (Certificate.Expiry_date.is_(None)) | (Certificate.Expiry_date > today)
+            ).all()
+    
+    def get_expired_certificates(self, student_id: str) -> List[Certificate]:
+        """Get all expired certificates for a student"""
+        with self.db_session() as session:
+            today = date.today()
+            return session.query(Certificate).filter(
+                Certificate.StudentID == student_id,
+                Certificate.Expiry_date <= today
+            ).all()
+    
+    def is_certificate_valid(self, certificate_id: str) -> bool:
+        """Check if a certificate is still valid (not expired)"""
+        with self.db_session() as session:
+            certificate = session.query(Certificate).filter(
+                Certificate.CertificateID == certificate_id
+            ).first()
+            
+            if not certificate:
+                return False
+            
+            # If no expiry date, certificate is always valid
+            if certificate.Expiry_date is None:
+                return True
+            
+            return certificate.Expiry_date > date.today()
+    
+    def get_certificates_issued_in_range(self, start_date: date, end_date: date) -> List[Certificate]:
+        """Get certificates issued within a date range"""
+        with self.db_session() as session:
+            return session.query(Certificate).filter(
+                Certificate.Issue_date >= start_date,
+                Certificate.Issue_date <= end_date
+            ).all()
+    
+    def get_certificate_count_by_course(self, course_id: str) -> int:
+        """Get total number of certificates issued for a course"""
+        with self.db_session() as session:
+            return session.query(Certificate).filter(
+                Certificate.CourseID == course_id
+            ).count()
+    
+    def get_certificate_statistics(self) -> Dict[str, Any]:
+        """Get certificate statistics"""
+        with self.db_session() as session:
+            total_certificates = session.query(Certificate).count()
+            
+            today = date.today()
+            active_certificates = session.query(Certificate).filter(
+                (Certificate.Expiry_date.is_(None)) | (Certificate.Expiry_date > today)
+            ).count()
+            
+            expired_certificates = session.query(Certificate).filter(
+                Certificate.Expiry_date <= today
+            ).count()
+            
+            return {
+                'total_certificates': total_certificates,
+                'active_certificates': active_certificates,
+                'expired_certificates': expired_certificates
+            }

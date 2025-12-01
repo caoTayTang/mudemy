@@ -1,214 +1,242 @@
 from sqlalchemy.orm import sessionmaker
-from typing import List, Optional
-from ..models.models import Resource
+from sqlalchemy.exc import IntegrityError
+from typing import List, Optional, Dict, Any
+from ..models.models import Resource, ProvideResource
+
 
 class ResourceService:
+    """Service for Resource CRUD operations"""
+    
     def __init__(self, db_session: sessionmaker):
         self.db_session = db_session
-
-    def create(self, resource_id: str, file_name: str, file_link: str,
-               external_link: Optional[str] = None) -> Resource:
-        resource = Resource(
-            ResourceID=resource_id,
-            File_Name=file_name,
-            File_link=file_link,
-            External_link=external_link
-        )
-        db = self.db_session()
-        db.add(resource)
-        db.commit()
-        db.refresh(resource)
-        db.close()
-        return resource
-
-    def get_by_id(self, resource_id: str) -> Optional[Resource]:
-        db = self.db_session()
-        result = db.query(Resource).filter(Resource.ResourceID == resource_id).first()
-        db.close()
-        return result
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Resource]:
-        db = self.db_session()
-        result = db.query(Resource).offset(skip).limit(limit).all()
-        db.close()
-        return result
-
-    def get_by_file_name(self, file_name: str) -> List[Resource]:
-        db = self.db_session()
-        result = db.query(Resource).filter(Resource.File_Name.like(f'%{file_name}%')).all()
-        db.close()
-        return result
-
-    def update(self, resource_id: str, file_name: Optional[str] = None,
-               file_link: Optional[str] = None, external_link: Optional[str] = None) -> Optional[Resource]:
-        db = self.db_session()
-        resource = db.query(Resource).filter(Resource.ResourceID == resource_id).first()
-        if not resource:
-            db.close()
-            return None
-        
-        if file_name is not None:
-            resource.File_Name = file_name
-        if file_link is not None:
-            resource.File_link = file_link
-        if external_link is not None:
-            resource.External_link = external_link
-        
-        db.commit()
-        db.refresh(resource)
-        db.close()
-        return resource
-
-    def delete(self, resource_id: str) -> bool:
-        db = self.db_session()
-        resource = db.query(Resource).filter(Resource.ResourceID == resource_id).first()
-        if not resource:
-            db.close()
-            return False
-        
-        db.delete(resource)
-        db.commit()
-        db.close()
-        return True
-
-    def attach_to_lesson(self, resource_id: str, lesson_id: str) -> bool:
-        """Attach a resource to a lesson"""
-        db = self.db_session()
-        try:
-            db.execute(provide_resource_table.insert().values(
-                ResourceID=resource_id,
-                LessonID=lesson_id
-            ))
-            db.commit()
-            db.close()
-            return True
-        except:
-            db.close()
-            return False
-
-    def detach_from_lesson(self, resource_id: str, lesson_id: str) -> bool:
-        """Detach a resource from a lesson"""
-        db = self.db_session()
-        result = db.execute(
-            provide_resource_table.delete().where(
-                (provide_resource_table.c.ResourceID == resource_id) & 
-                (provide_resource_table.c.LessonID == lesson_id)
-            )
-        )
-        db.commit()
-        db.close()
-        return result.rowcount > 0
-
-    def get_resources_by_lesson(self, lesson_id: str) -> List[Resource]:
-        """Get all resources for a specific lesson"""
-        db = self.db_session()
-        result = db.execute(
-            provide_resource_table.select().where(
-                provide_resource_table.c.LessonID == lesson_id
-            )
-        ).fetchall()
-        
-        resource_ids = [row.ResourceID for row in result]
-        resources = db.query(Resource).filter(Resource.ResourceID.in_(resource_ids)).all()
-        db.close()
-        return resources
-
-    def get_lessons_by_resource(self, resource_id: str) -> List[str]:
-        """Get all lesson IDs that use a specific resource"""
-        db = self.db_session()
-        result = db.execute(
-            provide_resource_table.select().where(
-                provide_resource_table.c.ResourceID == resource_id
-            )
-        ).fetchall()
-        db.close()
-        return [row.LessonID for row in result]
-
-    def get_resource_usage_count(self, resource_id: str) -> int:
-        """Get the number of lessons using this resource"""
-        db = self.db_session()
-        count = db.execute(
-            provide_resource_table.select().where(
-                provide_resource_table.c.ResourceID == resource_id
-            )
-        ).fetchall()
-        db.close()
-        return len(count)
-
-    def detach_all_from_lesson(self, lesson_id: str) -> int:
-        """Detach all resources from a specific lesson. Returns count of detached resources."""
-        db = self.db_session()
-        result = db.execute(
-            provide_resource_table.delete().where(
-                provide_resource_table.c.LessonID == lesson_id
-            )
-        )
-        db.commit()
-        count = result.rowcount
-        db.close()
-        return count
-
-    def detach_all_from_resource(self, resource_id: str) -> int:
-        """Detach a resource from all lessons. Returns count of affected lessons."""
-        db = self.db_session()
-        result = db.execute(
-            provide_resource_table.delete().where(
-                provide_resource_table.c.ResourceID == resource_id
-            )
-        )
-        db.commit()
-        count = result.rowcount
-        db.close()
-        return count
-
-    def bulk_attach_to_lesson(self, lesson_id: str, resource_ids: List[str]) -> dict:
-        """Attach multiple resources to a lesson at once"""
-        db = self.db_session()
-        success_count = 0
-        failed_ids = []
-        
-        for resource_id in resource_ids:
+    
+    def create_resource(self, resource_data: Dict[str, Any]) -> Resource:
+        """Create a new resource"""
+        with self.db_session() as session:
             try:
-                db.execute(provide_resource_table.insert().values(
-                    ResourceID=resource_id,
-                    LessonID=lesson_id
-                ))
-                success_count += 1
-            except:
-                failed_ids.append(resource_id)
-        
-        db.commit()
-        db.close()
-        
-        return {
-            'success': success_count,
-            'failed': len(failed_ids),
-            'failed_ids': failed_ids
-        }
+                resource = Resource(**resource_data)
+                session.add(resource)
+                session.commit()
+                session.refresh(resource)
+                return resource
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error creating resource: {str(e)}")
+    
+    def get_resource_by_id(self, resource_id: str) -> Optional[Resource]:
+        """Get resource by ID"""
+        with self.db_session() as session:
+            return session.query(Resource).filter(Resource.ResourceID == resource_id).first()
+    
+    def get_all_resources(self, skip: int = 0, limit: int = 100) -> List[Resource]:
+        """Get all resources with pagination"""
+        with self.db_session() as session:
+            return session.query(Resource).offset(skip).limit(limit).all()
+    
+    def search_resources_by_name(self, name: str) -> List[Resource]:
+        """Search resources by file name"""
+        with self.db_session() as session:
+            return session.query(Resource).filter(
+                Resource.File_Name.like(f'%{name}%')
+            ).all()
+    
+    def get_resources_with_external_links(self) -> List[Resource]:
+        """Get all resources that have external links"""
+        with self.db_session() as session:
+            return session.query(Resource).filter(
+                Resource.External_link.isnot(None)
+            ).all()
+    
+    def update_resource(self, resource_id: str, update_data: Dict[str, Any]) -> Optional[Resource]:
+        """Update resource information"""
+        with self.db_session() as session:
+            resource = session.query(Resource).filter(Resource.ResourceID == resource_id).first()
+            if not resource:
+                return None
+            
+            for key, value in update_data.items():
+                if hasattr(resource, key):
+                    setattr(resource, key, value)
+            
+            session.commit()
+            session.refresh(resource)
+            return resource
+    
+    def update_resource_file_link(self, resource_id: str, file_link: str) -> Optional[Resource]:
+        """Update resource file link"""
+        with self.db_session() as session:
+            resource = session.query(Resource).filter(Resource.ResourceID == resource_id).first()
+            if not resource:
+                return None
+            
+            resource.File_link = file_link
+            session.commit()
+            session.refresh(resource)
+            return resource
+    
+    def update_resource_external_link(self, resource_id: str, external_link: str) -> Optional[Resource]:
+        """Update resource external link"""
+        with self.db_session() as session:
+            resource = session.query(Resource).filter(Resource.ResourceID == resource_id).first()
+            if not resource:
+                return None
+            
+            resource.External_link = external_link
+            session.commit()
+            session.refresh(resource)
+            return resource
+    
+    def delete_resource(self, resource_id: str) -> bool:
+        """Delete a resource"""
+        with self.db_session() as session:
+            resource = session.query(Resource).filter(Resource.ResourceID == resource_id).first()
+            if not resource:
+                return False
+            
+            session.delete(resource)
+            session.commit()
+            return True
+    
+    def get_resource_count(self) -> int:
+        """Get total number of resources"""
+        with self.db_session() as session:
+            return session.query(Resource).count()
 
-    def get_resource_stats(self, resource_id: str) -> dict:
-        """Get statistics about a resource"""
-        db = self.db_session()
-        resource = db.query(Resource).filter(Resource.ResourceID == resource_id).first()
-        
-        if not resource:
-            db.close()
-            return {}
-        
-        lesson_count = db.execute(
-            provide_resource_table.select().where(
-                provide_resource_table.c.ResourceID == resource_id
-            )
-        ).fetchall()
-        
-        stats = {
-            'resource_id': resource_id,
-            'file_name': resource.File_Name,
-            'file_link': resource.File_link,
-            'external_link': resource.External_link,
-            'used_in_lessons': len(lesson_count),
-            'lesson_ids': [row.LessonID for row in lesson_count]
-        }
-        
-        db.close()
-        return stats
+
+class ProvideResourceService:
+    """Service for ProvideResource (Resource-Lesson relationship) operations"""
+    
+    def __init__(self, db_session: sessionmaker):
+        self.db_session = db_session
+    
+    def provide_resource_to_lesson(self, resource_id: str, lesson_id: str) -> ProvideResource:
+        """Assign a resource to a lesson"""
+        with self.db_session() as session:
+            try:
+                provide = ProvideResource(ResourceID=resource_id, LessonID=lesson_id)
+                session.add(provide)
+                session.commit()
+                session.refresh(provide)
+                return provide
+            except IntegrityError as e:
+                session.rollback()
+                raise ValueError(f"Error providing resource to lesson: {str(e)}")
+    
+    def get_provide_resource(self, resource_id: str, lesson_id: str) -> Optional[ProvideResource]:
+        """Get a specific provide resource relationship"""
+        with self.db_session() as session:
+            return session.query(ProvideResource).filter(
+                ProvideResource.ResourceID == resource_id,
+                ProvideResource.LessonID == lesson_id
+            ).first()
+    
+    def get_resources_by_lesson(self, lesson_id: str) -> List[ProvideResource]:
+        """Get all resources provided for a specific lesson"""
+        with self.db_session() as session:
+            return session.query(ProvideResource).filter(
+                ProvideResource.LessonID == lesson_id
+            ).all()
+    
+    def get_lessons_by_resource(self, resource_id: str) -> List[ProvideResource]:
+        """Get all lessons that use a specific resource"""
+        with self.db_session() as session:
+            return session.query(ProvideResource).filter(
+                ProvideResource.ResourceID == resource_id
+            ).all()
+    
+    def remove_resource_from_lesson(self, resource_id: str, lesson_id: str) -> bool:
+        """Remove a resource from a lesson"""
+        with self.db_session() as session:
+            provide = session.query(ProvideResource).filter(
+                ProvideResource.ResourceID == resource_id,
+                ProvideResource.LessonID == lesson_id
+            ).first()
+            
+            if not provide:
+                return False
+            
+            session.delete(provide)
+            session.commit()
+            return True
+    
+    def remove_all_resources_from_lesson(self, lesson_id: str) -> bool:
+        """Remove all resources from a lesson"""
+        with self.db_session() as session:
+            provides = session.query(ProvideResource).filter(
+                ProvideResource.LessonID == lesson_id
+            ).all()
+            
+            if not provides:
+                return False
+            
+            for provide in provides:
+                session.delete(provide)
+            
+            session.commit()
+            return True
+    
+    def remove_resource_from_all_lessons(self, resource_id: str) -> bool:
+        """Remove a resource from all lessons"""
+        with self.db_session() as session:
+            provides = session.query(ProvideResource).filter(
+                ProvideResource.ResourceID == resource_id
+            ).all()
+            
+            if not provides:
+                return False
+            
+            for provide in provides:
+                session.delete(provide)
+            
+            session.commit()
+            return True
+    
+    def get_resource_count_by_lesson(self, lesson_id: str) -> int:
+        """Get the number of resources for a lesson"""
+        with self.db_session() as session:
+            return session.query(ProvideResource).filter(
+                ProvideResource.LessonID == lesson_id
+            ).count()
+    
+    def get_lesson_count_by_resource(self, resource_id: str) -> int:
+        """Get the number of lessons using a resource"""
+        with self.db_session() as session:
+            return session.query(ProvideResource).filter(
+                ProvideResource.ResourceID == resource_id
+            ).count()
+    
+    def is_resource_provided_to_lesson(self, resource_id: str, lesson_id: str) -> bool:
+        """Check if a resource is provided to a lesson"""
+        with self.db_session() as session:
+            provide = session.query(ProvideResource).filter(
+                ProvideResource.ResourceID == resource_id,
+                ProvideResource.LessonID == lesson_id
+            ).first()
+            
+            return provide is not None
+    
+    def bulk_provide_resources(self, resource_ids: List[str], lesson_id: str) -> List[ProvideResource]:
+        """Provide multiple resources to a lesson"""
+        with self.db_session() as session:
+            provided = []
+            
+            for resource_id in resource_ids:
+                try:
+                    provide = ProvideResource(ResourceID=resource_id, LessonID=lesson_id)
+                    session.add(provide)
+                    provided.append(provide)
+                except IntegrityError:
+                    # Skip if already exists
+                    continue
+            
+            session.commit()
+            
+            for provide in provided:
+                session.refresh(provide)
+            
+            return provided
+    
+    def get_all_provide_resources(self) -> List[ProvideResource]:
+        """Get all provide resource relationships"""
+        with self.db_session() as session:
+            return session.query(ProvideResource).all()

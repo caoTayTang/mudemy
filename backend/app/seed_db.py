@@ -157,8 +157,8 @@ def seed_additional_data():
 if __name__ == "__main__":    
     try:
         # Test existing data
-        test_queries()
-        
+        #test_queries()
+        Base.meta
         # Optionally seed additional data
         # Uncomment the line below to add test data
         # seed_additional_data()

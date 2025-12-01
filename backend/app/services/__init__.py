@@ -1,50 +1,73 @@
 from .course_service import (
     CourseService,
     ModuleService,
-    LessonRefService,
+    RequiresService,
     ContentService,
+    LessonRefService,
     TextService,
     VideoService,
     ImageService,
+    CategoryService,
+)
+
+from .user_service import (
+    UserService,
+    TakeService,
+    InterestsService,
+    InstructService,
+    QualificationService,
+)
+
+from .enrollment_service import (
+    EnrollmentService,
+    PaymentService,
+    CertificateService,
+)
+
+from .assessment_service import (
     AssignmentService,
     QuizService,
     QuestionService,
-    AnswerService
+    AnswerService,
+    AssignSubmissionService,
+    QuizSubmissionService,
 )
 
-from .user_service import UserService, InstructorService, StudentService
-from .enrollment_service import EnrollmentService, PaymentService, CertificateService
-from .submission_service import SubmissionService, TakeService
-from .resource_service import ResourceService
+from .resource_service import ResourceService, ProvideResourceService
 
 __all__ = [
     # User services
     'UserService',
-    'InstructorService',
-    'StudentService',
-    
+    'TakeService',
+    'InterestsService',
+    'InstructService',
+    'QualificationService',
+
     # Course services
     'CourseService',
     'ModuleService',
-    'LessonRefService',
+    'RequiresService',
     'ContentService',
+    'LessonRefService',
     'TextService',
     'VideoService',
     'ImageService',
-    'AssignmentService',
-    'QuizService',
-    'QuestionService',
-    'AnswerService',
-    
+    'CategoryService',
+
     # Enrollment services
     'EnrollmentService',
     'PaymentService',
     'CertificateService',
-    
-    # Submission services
-    'SubmissionService',
-    'TakeService',
-    
+
+    # Assessment services
+    'AssignmentService',
+    'QuizService',
+    'QuestionService',
+    'AnswerService',
+    'AssignSubmissionService',
+    'QuizSubmissionService',
+
     # Resource services
-    'ResourceService'
+    'ResourceService',
+    'ProvideResourceService',
 ]
