@@ -14,7 +14,7 @@ def get_courses(
    current_user: CurrentUser = Depends(get_current_user_from_session)
 ):
     """Get all courses for the current tutor"""
-    if current_user.role != 'tutor':
+    if current_user.role == 'tutee':
         raise HTTPException(status_code=403, detail="Not authorized, requires INSTRUCTOR role")
     
     return {

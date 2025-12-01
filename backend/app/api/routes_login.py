@@ -12,8 +12,8 @@ user_service = UserService(mudemy_session)
 @router.get("/roles")
 def get_role():
     return [
-            { 'id': 'TUTOR', 'label': 'tutor', 'description': 'Dành cho sinh viên muốn dạy kèm' },
-            { 'id': 'TUTEE', 'label': 'tutee', 'description': 'Dành cho sinh viên cần học thêm' },
+            { 'id': 'TUTOR', 'label': 'tutor', 'description': 'Dành cho giảng viên' },
+            { 'id': 'TUTEE', 'label': 'tutee', 'description': 'Dành cho học viên' },
             { 'id': 'ADMIN', 'label': 'admin', 'description': 'Quản trị hệ thống' },
          ]
 
