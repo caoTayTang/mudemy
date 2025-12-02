@@ -33,13 +33,13 @@ def create_user(data: Dict[str, Any] = Body(...)):
 
 
 @router.get("/users")
-def list_users(skip: int = 0, limit: int = 100, current_user: CurrentUser = Depends(get_current_user_from_session)):
+def list_users(limit: int = 100, current_user: CurrentUser = Depends(get_current_user_from_session)):
 	# only instructors (or higher) can list all users
 	if current_user.role == 'tutee':
 		raise HTTPException(status_code=403, detail="Not authorized")
 
-	items = user_service.get_all_users(skip=skip, limit=limit)
-	return {"status": "success", "count": len(items)}
+	users = user_service.get_all_users(limit=limit)
+	return {"status": "success", "count": len(users),  "user": [{"UserID": u.UserID, "User_name": getattr(u, 'User_name', None), "Full_name": getattr(u, 'Full_name', None)} for u in users]}
 
 
 @router.get("/users/{user_id}")

@@ -39,10 +39,10 @@ class UserService:
         with self.db_session() as session:
             return session.query(User).filter(User.Email == email).first()
     
-    def get_all_users(self, skip: int = 0, limit: int = 100) -> List[User]:
+    def get_all_users(self, limit: int = 100) -> List[User]:
         """Get all users with pagination"""
         with self.db_session() as session:
-            return session.query(User).offset(skip).limit(limit).all()
+            return session.query(User).limit(limit).all()
     
     def get_instructors(self) -> List[User]:
         """Get all instructors"""
