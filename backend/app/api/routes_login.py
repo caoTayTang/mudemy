@@ -44,6 +44,7 @@ def login(
         detail=f"You don't have permission to login as {role}",
     )
 
+    #password for admin: Str0ng#Pass
     if role.lower() == 'admin' and username != 'sManager':
         raise HTTPException(
         status_code=403,

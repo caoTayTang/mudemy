@@ -158,7 +158,9 @@ if __name__ == "__main__":
     try:
         # Test existing data
         #test_queries()
-        Base.meta
+        users = user_service.get_all_users()
+        for user in users:
+            print(user.User_name, user.Password)
         # Optionally seed additional data
         # Uncomment the line below to add test data
         # seed_additional_data()

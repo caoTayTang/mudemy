@@ -243,12 +243,15 @@ def get_prerequisites(
 
 @router.get("/courses/{course_id}/prerequisites/f")
 def check_prerequisites(course_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	"""Get all prerequisites for a course (Using CheckPrerequisiteCompletion PROCEDURE)"""
-	sid = current_user.user_id
-	with mudemy_session() as session:
-		rows = session.execute(text("EXEC CheckPrerequisiteCompletion :student_id, :target_course_id"), {"student_id": sid, "target_course_id": course_id}).fetchall()
-		result = [dict(r) for r in rows]
-	return {"status": "success", "count": len(result), "missing_prereqs": result}
+    """Get all prerequisites for a course (Using CheckPrerequisiteCompletion PROCEDURE)"""
+    print(course_id)
+    sid = current_user.user_id
+    result = []
+    with mudemy_session() as session:
+        rows = session.execute(text("EXEC CheckPrerequisiteCompletion :student_id, :target_course_id"), {"student_id": sid, "target_course_id": course_id}).fetchall()
+        for r in rows:
+            result.append({"CourseID":r[0],"Title":r[1]})
+    return {"status": "success", "count": len(rows), "missing_prereqs": result}
 
 @router.delete("/courses/{course_id}/prerequisites/{required_course_id}")
 def remove_prerequisite(

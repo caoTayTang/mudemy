@@ -1,31 +1,41 @@
-
 const apiSpec = {
-  title: 'MUDemy API Guide',
-  version: '1.0',
-  notes: 'Auth uses cookie `session_id` set by POST /login. Roles: `tutor`, `tutee`, `admin`.',
+  title: 'MUDemy API Complete Documentation',
+  version: '1.0.0',
+  baseURL: 'http://localhost:8000/api',
+  authentication: 'Cookie-based (session_id). Set automatically on POST /login',
+  roles: {
+    tutor: 'Instructor - can create/manage courses, assessments, resources',
+    tutee: 'Student - can enroll, submit assignments/quizzes, view content',
+    admin: 'System administrator (only username: sManager can login as admin)'
+  },
+  notes: 'Auth uses httponly cookie "session_id" set by POST /login. All timestamps in ISO format. IDs are VARCHAR(10).',
+
   groups: [
 
-    /* =====================
-       routes_login.py
-       Authentication
-       ===================== */
+    /* =====================================================
+       AUTHENTICATION (routes_login.py)
+       ===================================================== */
     {
-      group: 'routes_login.py',
-      description: 'Authentication endpoints. Successful login sets `session_id` cookie (httponly).',
-      routes: [
+      group: 'Authentication',
+      basePath: '',
+      description: 'Login/logout endpoints. Successful login sets httponly cookie "session_id".',
+      endpoints: [
         {
-          name: 'List Roles',
+          name: 'Get Available Roles',
           method: 'GET',
           path: '/roles',
-          auth: 'none',
-          roles: ['any'],
+          auth: false,
+          description: 'List all available system roles',
           input: null,
           output: {
             type: 'array',
-            items: { id: 'string', label: 'string', description: 'string' }
+            items: {
+              id: 'string (TUTOR|TUTEE|ADMIN)',
+              label: 'string (tutor|tutee|admin)',
+              description: 'string'
+            }
           },
-          examples: {
-            request: null,
+          example: {
             response: [
               { id: 'TUTOR', label: 'tutor', description: 'Dành cho giảng viên' },
               { id: 'TUTEE', label: 'tutee', description: 'Dành cho học viên' },
@@ -33,18 +43,17 @@ const apiSpec = {
             ]
           }
         },
-
         {
           name: 'Login',
           method: 'POST',
           path: '/login',
-          auth: 'none',
-          roles: ['any'],
+          auth: false,
+          description: 'Authenticate user and set session cookie. Password stored as plaintext in DB.',
           input: {
             body: {
-              username: 'string (User_name from USER table)',
-              password: 'string',
-              role: "'tutor' | 'tutee' | 'admin'"
+              username: 'string - User_name from USER table (required)',
+              password: 'string - plaintext password (required)',
+              role: "string - 'tutor' | 'tutee' | 'admin' (required, case-insensitive)"
             }
           },
           output: {
@@ -52,463 +61,770 @@ const apiSpec = {
             role: 'string',
             status: 'string'
           },
-          examples: {
-            request: { username: 'USR00006', password: 'P@ssw0rd!', role: 'tutee' },
-            response: { username: 'USR00006', role: 'tutee', status: 'Login successful' }
-          }
+          example: {
+            request: {
+              username: 'Tuấn BK',
+              password: 't@ssw0r123!',
+              role: 'tutee'
+            },
+            response: {
+              username: 'Tuấn BK',
+              role: 'tutee',
+              status: 'Login successful'
+            }
+          },
+          errors: [
+            '401: Incorrect username or password',
+            '403: You don\'t have permission to login as {role}',
+            '403: You don\'t have permission to login as admin (only sManager can be admin)'
+          ]
         },
-
         {
           name: 'Logout',
           method: 'POST',
           path: '/logout',
-          auth: 'cookie',
+          auth: true,
           roles: ['any'],
+          description: 'Clear session cookie and logout',
           input: null,
           output: { status: 'Logout successful' },
-          examples: { request: null, response: { status: 'Logout successful' } }
+          example: { response: { status: 'Logout successful' } }
         }
       ]
     },
 
-
-    /* =====================
-       routes_user.py
-       Users, Takes, Interests, Instruct, Qualifications
-       ===================== */
+    /* =====================================================
+       USERS (routes_user.py)
+       ===================================================== */
     {
-      group: 'routes_user.py',
-      description: 'User CRUD and helper endpoints. See `USER`, `TAKE`, `INTERESTS`, `INSTRUCT`, `QUALIFICATION` tables in DDL/models.',
-      routes: [
-
+      group: 'Users',
+      basePath: '/users',
+      description: 'User CRUD operations, interests, instructors, qualifications, and lesson progress tracking.',
+      endpoints: [
         {
-          name: 'Get current user',
+          name: 'Get Current User',
           method: 'GET',
-          path: '/users/me',
-          auth: 'cookie',
+          path: '/me',
+          auth: true,
           roles: ['any'],
+          description: 'Get authenticated user\'s profile',
           input: null,
           output: {
             status: 'string',
             user: {
-              UserID: 'string',
-              User_name: 'string',
-              Email: 'string?',
-              Full_name: 'string?'
+              UserID: 'string(10)',
+              User_name: 'string(100) - unique',
+              Full_name: 'string(100) nullable',
+              Email: 'string(100) - unique, validated format'
             }
           },
-          examples: { response: { status: 'success', user: { UserID: 'USR00006', User_name: 'tuanti', Full_name: 'Nguyen Tuan' } } }
-        },
-
-        {
-          name: 'Create user',
-          method: 'POST',
-          path: '/users',
-          auth: 'none',
-          roles: ['any'],
-          input: {
-            body: {
-              User_name: 'string (required, unique, NVARCHAR(100))',
-              Email: 'string (required, unique, check format)',
-              Password: 'string (required, min 6, mixed chars required by DDL checks)',
-              Full_name: 'string (optional)',
-              City: 'string (optional)',
-              Country: 'string (optional)',
-              Phone: 'string (optional)',
-              Date_of_birth: 'YYYY-MM-DD (optional)',
-              IFlag: 'boolean (optional) - instructor flag',
-              SFlag: 'boolean (optional) - student flag'
+          example: {
+            response: {
+              status: 'success',
+              user: {
+                UserID: 'USR00006',
+                User_name: 'Tuấn BK',
+                Full_name: 'Nguyễn Anh Tuấn',
+                Email: 'anhtuan@hcmut.edu.vn'
+              }
             }
-          },
-          output: { status: 'created', user_id: 'string (UserID auto-generated by trigger if not provided)' },
-          examples: {
-            request: { User_name: 'alice', Email: 'alice@example.com', Password: 'Str0ng#Pass', Full_name: 'Alice Example', SFlag: true },
-            response: { status: 'created', user_id: 'USR00014' }
           }
         },
-
         {
-          name: 'List users',
-          method: 'GET',
-          path: '/users',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { query: { limit: 'int (default 100)' } },
-          output: { status: 'success', count: 'int', users: [{ UserID: 'string', User_name: 'string', Full_name: 'string' }] },
-          examples: { response: { status: 'success', count: 10 } }
-        },
-
-        {
-          name: 'Get user by id',
-          method: 'GET',
-          path: '/users/{user_id}',
-          auth: 'cookie',
-          roles: ['owner|tutor|admin'],
-          input: { path: { user_id: 'string' } },
-          output: { status: 'success', user: { UserID: 'string', User_name: 'string', Email: 'string', Full_name: 'string' } },
-          examples: { response: { status: 'success', user: { UserID: 'USR00006', User_name: 'tuanti', Email: 't@example.com', Full_name: 'Nguyen Tuan' } } }
-        },
-
-        {
-          name: 'Update user',
-          method: 'PUT',
-          path: '/users/{user_id}',
-          auth: 'cookie',
-          roles: ['owner|admin|tutor'],
-          input: { path: { user_id: 'string' }, body: { Full_name: 'string?', City: 'string?', Country: 'string?', Phone: 'string?', Bio_text: 'string?' } },
-          output: { status: 'updated', user_id: 'string' },
-          examples: { request: { Full_name: 'Updated Name' }, response: { status: 'updated', user_id: 'USR00006' } }
-        },
-
-        {
-          name: 'Delete user',
-          method: 'DELETE',
-          path: '/users/{user_id}',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { path: { user_id: 'string' } },
-          output: { status: 'deleted', user_id: 'string' },
-          examples: { response: { status: 'deleted', user_id: 'USR00006' } }
-        },
-
-        /* Takes (lesson progress) */
-        {
-          name: 'Create take (lesson progress)',
+          name: 'Create User (Register)',
           method: 'POST',
-          path: '/takes',
-          auth: 'cookie',
-          roles: ['tutee'],
-          input: { body: { UserID: 'string', LessonID: 'string', is_finished: 'boolean (optional, default false)' } },
-          output: { status: 'created', UserID: 'string', LessonID: 'string' },
-          examples: { request: { UserID: 'USR00006', LessonID: 'L001', is_finished: false }, response: { status: 'created', UserID: 'USR00006', LessonID: 'L001' } }
+          path: '',
+          auth: false,
+          description: 'Register new user account. UserID auto-generated if not provided.',
+          input: {
+            body: {
+              User_name: 'string(100) - required, unique, NVARCHAR',
+              Email: 'string(100) - required, unique, must match format *@*.*',
+              Password: 'string(255) - required, min 6 chars, must contain: lowercase, uppercase, digit, special char',
+              Full_name: 'string(100) - optional, NVARCHAR',
+              City: 'string(100) - optional, NVARCHAR',
+              Country: 'string(100) - optional, NVARCHAR',
+              Phone: 'string(10) - optional',
+              Date_of_birth: 'date (YYYY-MM-DD) - optional',
+              IFlag: 'boolean - optional, instructor flag (default false)',
+              SFlag: 'boolean - optional, student flag (default false)',
+              Bio_text: 'string(MAX) - optional, NVARCHAR',
+              Year_of_experience: 'integer - optional, >= 0'
+            }
+          },
+          output: {
+            status: 'created',
+            user_id: 'string(10) - auto-generated format USR#####'
+          },
+          example: {
+            request: {
+              User_name: 'alice_new',
+              Email: 'alice@example.com',
+              Password: 'StrongP@ss123',
+              Full_name: 'Alice Example',
+              Country: 'Vietnam',
+              SFlag: true
+            },
+            response: { status: 'created', user_id: 'USR00014' }
+          },
+          errors: [
+            '400: Email must match format check',
+            '400: Password requirements not met',
+            '400: Duplicate username or email'
+          ]
+        },
+        {
+          name: 'List All Users',
+          method: 'GET',
+          path: '',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Get all users (instructors and admins only)',
+          input: {
+            query: {
+              limit: 'integer - default 100, max 100 (pagination)'
+            }
+          },
+          output: {
+            status: 'success',
+            count: 'integer',
+            user: 'array of { UserID, User_name, Full_name }'
+          },
+          example: {
+            response: {
+              status: 'success',
+              count: 13,
+              user: [
+                { UserID: 'USR00001', User_name: 'Đạt Phạm', Full_name: 'Phạm Lê Tiến Đạt' }
+              ]
+            }
+          }
+        },
+        {
+          name: 'Get User by ID',
+          method: 'GET',
+          path: '/{user_id}',
+          auth: true,
+          roles: ['any'],
+          description: 'Get specific user profile. Students can only view their own profile.',
+          input: { path: { user_id: 'string(10)' } },
+          output: {
+            status: 'success',
+            user: {
+              UserID: 'string(10)',
+              User_name: 'string(100)',
+              Email: 'string(100)',
+              Full_name: 'string(100)',
+              City: 'string(100) nullable',
+              Country: 'string(100) nullable'
+            }
+          },
+          errors: ['404: User not found', '403: Not authorized to view this user']
+        },
+        {
+          name: 'Update User',
+          method: 'PUT',
+          path: '/{user_id}',
+          auth: true,
+          roles: ['any'],
+          description: 'Update user profile. Students can only update their own profile.',
+          input: {
+            path: { user_id: 'string(10)' },
+            body: {
+              Full_name: 'string(100) - optional',
+              City: 'string(100) - optional',
+              Country: 'string(100) - optional',
+              Phone: 'string(10) - optional',
+              Bio_text: 'string(MAX) - optional',
+              Year_of_experience: 'integer - optional'
+            }
+          },
+          output: { status: 'updated', user_id: 'string(10)' },
+          errors: ['404: User not found', '403: Not authorized to update this user']
+        },
+        {
+          name: 'Delete User',
+          method: 'DELETE',
+          path: '/{user_id}',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Delete user account and all related data (cascading)',
+          input: { path: { user_id: 'string(10)' } },
+          output: { status: 'deleted', user_id: 'string(10)' },
+          errors: ['404: User not found']
+        },
+        {
+          name: 'List Instructors',
+          method: 'GET',
+          path: '/instructors',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Get all users with instructor flag (IFlag = true)',
+          input: null,
+          output: { status: 'success', count: 'integer' }
+        },
+        {
+          name: 'List Students',
+          method: 'GET',
+          path: '/students',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Get all users with student flag (SFlag = true)',
+          input: null,
+          output: { status: 'success', count: 'integer' }
+        },
+        {
+          name: 'Search Users',
+          method: 'GET',
+          path: '/search',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Search users by full name (LIKE query)',
+          input: { query: { name: 'string - search term (required)' } },
+          output: { status: 'success', count: 'integer', users: 'array' }
         },
 
+        /* Takes (Lesson Progress) */
         {
-          name: 'Get take (user + lesson)',
-          method: 'GET',
-          path: '/takes/{user_id}/{lesson_id}',
-          auth: 'cookie',
-          roles: ['owner|tutor|admin'],
-          input: { path: { user_id: 'string', lesson_id: 'string' } },
-          output: { status: 'success', take: { UserID: 'string', LessonID: 'string', is_finished: 'boolean' } },
-          examples: { response: { status: 'success', take: { UserID: 'USR00006', LessonID: 'L001', is_finished: false } } }
+          name: 'Create Take (Start Lesson)',
+          method: 'POST',
+          path: '',
+          subPath: '/takes',
+          auth: true,
+          roles: ['any'],
+          description: 'Record that user is taking/has taken a lesson. Auto-sets UserID to current user if not provided.',
+          input: {
+            body: {
+              UserID: 'string(10) - optional, defaults to current user',
+              LessonID: 'string(10) - required, references LESSON_REF',
+              is_finished: 'boolean - optional, default false'
+            }
+          },
+          output: { status: 'created', UserID: 'string(10)', LessonID: 'string(10)' },
+          example: {
+            request: { LessonID: 'CON001', is_finished: false },
+            response: { status: 'created', UserID: 'USR00006', LessonID: 'CON001' }
+          },
+          errors: [
+            '403: Not authorized to create take for another user (students)',
+            '400: Duplicate entry (user already taking this lesson)'
+          ]
         },
-
         {
-          name: 'Get lesson progress (summary)',
+          name: 'Get Take (User + Lesson)',
           method: 'GET',
-          path: '/takes/{user_id}/progress',
-          auth: 'cookie',
-          roles: ['owner|tutor|admin'],
-          input: { path: { user_id: 'string' } },
-          output: { status: 'success', progress: { total_lessons: 'int', completed_lessons: 'int', completion_rate: 'float (percent)' } },
-          examples: { response: { status: 'success', progress: { total_lessons: 10, completed_lessons: 6, completion_rate: 60.0 } } }
+          path: '',
+          subPath: '/takes/{user_id}/{lesson_id}',
+          auth: true,
+          roles: ['any'],
+          description: 'Get specific lesson progress for user',
+          input: {
+            path: {
+              user_id: 'string(10)',
+              lesson_id: 'string(10)'
+            }
+          },
+          output: {
+            status: 'success',
+            take: {
+              UserID: 'string(10)',
+              LessonID: 'string(10)',
+              is_finished: 'boolean'
+            }
+          },
+          errors: ['404: Take not found', '403: Not authorized']
+        },
+        {
+          name: 'Get User Lessons',
+          method: 'GET',
+          path: '',
+          subPath: '/takes/user/{user_id}',
+          auth: true,
+          roles: ['any'],
+          description: 'Get all lessons taken by user (with completion status)',
+          input: { path: { user_id: 'string(10)' } },
+          output: { status: 'success', count: 'integer' }
+        },
+        {
+          name: 'Mark Lesson Finished',
+          method: 'POST',
+          path: '',
+          subPath: '/takes/{user_id}/{lesson_id}/finish',
+          auth: true,
+          roles: ['any'],
+          description: 'Mark lesson as completed (is_finished = true)',
+          input: { path: { user_id: 'string(10)', lesson_id: 'string(10)' } },
+          output: { status: 'updated', UserID: 'string(10)', LessonID: 'string(10)' },
+          errors: ['404: Take not found', '403: Not authorized']
+        },
+        {
+          name: 'Mark Lesson Unfinished',
+          method: 'POST',
+          path: '',
+          subPath: '/takes/{user_id}/{lesson_id}/unfinished',
+          auth: true,
+          roles: ['any'],
+          description: 'Mark lesson as incomplete (is_finished = false)',
+          input: { path: { user_id: 'string(10)', lesson_id: 'string(10)' } },
+          output: { status: 'updated', UserID: 'string(10)', LessonID: 'string(10)' }
+        },
+        {
+          name: 'Delete Take',
+          method: 'DELETE',
+          path: '',
+          subPath: '/takes/{user_id}/{lesson_id}',
+          auth: true,
+          roles: ['any'],
+          description: 'Remove lesson progress record',
+          input: { path: { user_id: 'string(10)', lesson_id: 'string(10)' } },
+          output: { status: 'deleted' }
+        },
+        {
+          name: 'Get Lesson Progress (Summary)',
+          method: 'GET',
+          path: '',
+          subPath: '/takes/{user_id}/progress',
+          auth: true,
+          roles: ['any'],
+          description: 'Get user\'s lesson completion statistics',
+          input: { path: { user_id: 'string(10)' } },
+          output: {
+            status: 'success',
+            progress: {
+              total_lessons: 'integer',
+              completed_lessons: 'integer',
+              incomplete_lessons: 'integer',
+              completion_rate: 'float - percentage (0-100)'
+            }
+          },
+          example: {
+            response: {
+              status: 'success',
+              progress: {
+                total_lessons: 10,
+                completed_lessons: 6,
+                incomplete_lessons: 4,
+                completion_rate: 60.0
+              }
+            }
+          }
         },
 
         /* Interests */
         {
-          name: 'Add interest',
+          name: 'Add Interest',
           method: 'POST',
-          path: '/users/{user_id}/interests',
-          auth: 'cookie',
-          roles: ['owner|tutor|admin'],
-          input: { body: { Interest: 'string' } },
-          output: { status: 'created', UserID: 'string', Interest: 'string' },
-          examples: { request: { Interest: 'Python' }, response: { status: 'created', user_id: 'USR00006', interest: 'Python' } }
+          path: '',
+          subPath: '/{user_id}/interests',
+          auth: true,
+          roles: ['any'],
+          description: 'Add learning interest for student (composite key: UserID + Interest)',
+          input: {
+            path: { user_id: 'string(10)' },
+            body: {
+              interest: 'string(100) - NVARCHAR, e.g. "Python", "Web Development"'
+            }
+          },
+          output: { status: 'created', user_id: 'string(10)', interest: 'string(100)' },
+          errors: ['403: Not authorized', '400: Duplicate interest for user']
         },
-
-        /* Instruct */
         {
-          name: 'Assign instructor to course',
-          method: 'POST',
-          path: '/instruct',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { UserID: 'string', CourseID: 'string' } },
-          output: { status: 'assigned', UserID: 'string', CourseID: 'string' },
-          examples: { request: { UserID: 'USR00001', CourseID: 'CRS00001' }, response: { status: 'assigned', UserID: 'USR00001', CourseID: 'CRS00001' } }
+          name: 'Get User Interests',
+          method: 'GET',
+          path: '',
+          subPath: '/{user_id}/interests',
+          auth: true,
+          roles: ['any'],
+          description: 'List all interests for user',
+          input: { path: { user_id: 'string(10)' } },
+          output: { status: 'success', count: 'integer', interests: 'array of strings' }
+        },
+        {
+          name: 'Clear User Interests',
+          method: 'DELETE',
+          path: '',
+          subPath: '/{user_id}/interests',
+          auth: true,
+          roles: ['any'],
+          description: 'Remove all interests for user',
+          input: { path: { user_id: 'string(10)' } },
+          output: { status: 'deleted' },
+          errors: ['404: No interests to clear', '403: Not authorized']
         },
 
         /* Qualifications */
         {
-          name: 'Add qualification',
+          name: 'Add Qualification',
           method: 'POST',
-          path: '/users/{user_id}/qualifications',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { Qualification: 'string' } },
-          output: { status: 'created', UserID: 'string', Qualification: 'string' },
-          examples: { request: { Qualification: 'PhD in CS' }, response: { status: 'created', user_id: 'USR00001' } }
-        }
-
-      ]
-    },
-
-
-    /* =====================
-       routes_course.py
-       Course, Module, Content, Category, Requires
-       ===================== */
-    {
-      group: 'routes_course.py',
-      description: 'Course, module and content management endpoints. Fields follow COURSE, MODULE, CONTENT tables.',
-      routes: [
-
+          path: '',
+          subPath: '/{user_id}/qualifications',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Add professional qualification for instructor (composite key: UserID + Qualification)',
+          input: {
+            path: { user_id: 'string(10)' },
+            body: {
+              qualification: 'string(200) - e.g. "PhD in Computer Science"'
+            }
+          },
+          output: { status: 'created', user_id: 'string(10)' },
+          errors: ['400: Duplicate qualification']
+        },
         {
-          name: 'List courses',
+          name: 'Get User Qualifications',
           method: 'GET',
-          path: '/courses',
-          auth: 'cookie',
+          path: '',
+          subPath: '/{user_id}/qualifications',
+          auth: true,
           roles: ['any'],
-          input: { query: { skip: 'int', limit: 'int', difficulty: "'Beginner'|'Intermediate'|'Advanced' (optional)" } },
-          output: { status: 'success', count: 'int', courses: [{ CourseID: 'string', Title: 'string', Difficulty: 'string' }] },
-          examples: { response: { status: 'success', count: 6 } }
+          description: 'List qualifications for instructor',
+          input: { path: { user_id: 'string(10)' } },
+          output: { status: 'success', count: 'integer' }
+        },
+        {
+          name: 'Remove Qualification',
+          method: 'DELETE',
+          path: '',
+          subPath: '/{user_id}/qualifications/{qualification}',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Remove specific qualification',
+          input: {
+            path: {
+              user_id: 'string(10)',
+              qualification: 'string(200) - must match exactly'
+            }
+          },
+          output: { status: 'deleted' },
+          errors: ['404: Qualification not found']
+        },
+        {
+          name: 'Clear All Qualifications',
+          method: 'DELETE',
+          path: '',
+          subPath: '/{user_id}/qualifications',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Remove all qualifications for instructor',
+          input: { path: { user_id: 'string(10)' } },
+          output: { status: 'deleted' }
         },
 
+        /* Instructor-Course Assignment */
         {
-          name: 'Create course',
+          name: 'Assign Instructor to Course',
           method: 'POST',
-          path: '/courses',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { Title: 'string (min 5)', Language: 'string', Difficulty: "'Beginner'|'Intermediate'|'Advanced' (optional)", Description: 'string (optional)' } },
-          output: { status: 'created', CourseID: 'string' },
-          examples: { request: { Title: 'Data Science 101', Language: 'English', Difficulty: 'Beginner' }, response: { status: 'created', course_id: 'CRS00007' } }
+          path: '',
+          subPath: '/instruct',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Assign instructor to teach course (composite key: UserID + CourseID)',
+          input: {
+            body: {
+              UserID: 'string(10) - instructor user ID',
+              CourseID: 'string(10) - course ID'
+            }
+          },
+          output: { status: 'assigned', UserID: 'string(10)', CourseID: 'string(10)' },
+          example: {
+            request: { UserID: 'USR00001', CourseID: 'CRS00001' },
+            response: { status: 'assigned', UserID: 'USR00001', CourseID: 'CRS00001' }
+          },
+          errors: ['400: Duplicate assignment']
         },
-
         {
-          name: 'Add category to course',
-          method: 'POST',
-          path: '/courses/{course_id}/categories',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { Category: 'string' } },
-          output: { status: 'created', CourseID: 'string', Category: 'string' },
-          examples: { request: { Category: 'Data Science' }, response: { status: 'created' } }
-        },
-
-        {
-          name: 'Add prerequisite',
-          method: 'POST',
-          path: '/courses/{course_id}/prerequisites',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { Required_courseID: 'string' } },
-          output: { status: 'created', CourseID: 'string', Required_courseID: 'string' },
-          examples: { request: { Required_courseID: 'CRS00002' }, response: { status: 'created', CourseID: 'CRS00003', Required_courseID: 'CRS00002' } }
-        }
-
-      ]
-    },
-
-
-    /* =====================
-       routes_assessment.py
-       Assignments, Quizzes, Questions, Answers, Submissions
-       ===================== */
-    {
-      group: 'routes_assessment.py',
-      description: 'Assessment endpoints. Uses ASSIGNMENT, QUIZ, QUESTION, ANSWER, ASSIGN_SUBMISSION, QUIZ_SUBMISSION models.',
-      routes: [
-
-        {
-          name: 'Create assignment',
-          method: 'POST',
-          path: '/assignments',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { Title: 'string', ModuleID: 'string', Deadline: 'ISO datetime', Description: 'string (optional)' } },
-          output: { status: 'created', AssID: 'string' },
-          examples: { request: { Title: 'HW1', ModuleID: 'MOD001', Deadline: '2025-12-01T23:59:00' }, response: { status: 'created', assignment_id: 'ASS0001' } }
-        },
-
-        {
-          name: 'Create quiz',
-          method: 'POST',
-          path: '/quizzes',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { Title: 'string', ModuleID: 'string', Time_limit: 'int (seconds)', Num_attempt: 'int', Deadline: 'ISO datetime' } },
-          output: { status: 'created', QuizID: 'string' },
-          examples: { request: { Title: 'Quiz 1', ModuleID: 'MOD001', Time_limit: 900 }, response: { status: 'created', quiz_id: 'QUIZ001' } }
-        },
-
-        {
-          name: 'Create question',
-          method: 'POST',
-          path: '/quizzes/{quiz_id}/questions',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { Content: 'string', Correct_answer: 'string (can be NVARCHAR(MAX))' } },
-          output: { status: 'created', QuestionID: 'string' },
-          examples: { request: { Content: 'What is 2+2?', Correct_answer: '4' }, response: { status: 'created', QuestionID: 'QST001' } }
-        },
-
-        {
-          name: 'Create answer',
-          method: 'POST',
-          path: '/questions/{question_id}/answers',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { QuizID: 'string', Answer: 'string' } },
-          output: { status: 'created', AnswerID: 'string' },
-          examples: { request: { QuizID: 'QUIZ001', Answer: '4' }, response: { status: 'created', AnswerID: 'ANS001' } }
-        },
-
-        {
-          name: 'Submit assignment',
-          method: 'POST',
-          path: '/assignments/{ass_id}/submit',
-          auth: 'cookie',
-          roles: ['tutee'],
-          input: { body: { UserID: 'string (optional)', Sub_content: 'string (text or file-link)', Sub_date: 'ISO datetime (optional)' } },
-          output: { status: 'created', SubID: 'string' },
-          examples: { request: { Sub_content: 'Answer file link' }, response: { status: 'created', SubID: 'SUB001' } }
-        },
-
-        {
-          name: 'Get latest assignment submissions (one per student)',
+          name: 'Get Instructor Courses',
           method: 'GET',
-          path: '/assignments/{ass_id}/submissions/latest',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { path: { ass_id: 'string' } },
-          output: { status: 'success', submissions: [{ SubID: 'string', UserID: 'string', Grade: 'number?', Sub_date: 'ISO datetime' }] },
-          examples: { response: { status: 'success', submissions: [ { SubID: 'SUB101', UserID: 'USR00006', Grade: 85.0, Sub_date: '2025-11-30T10:00:00' } ] } }
-        },
-
-        {
-          name: 'Get latest quiz submissions (one per student)',
-          method: 'GET',
-          path: '/quizzes/{quiz_id}/submissions/latest',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { path: { quiz_id: 'string' } },
-          output: { status: 'success', submissions: [{ SubID: 'string', UserID: 'string', Grade: 'number?', Sub_date: 'ISO datetime' }] },
-          examples: { response: { status: 'success', submissions: [ { SubID: 'QSUB050', UserID: 'USR00006', Grade: 80.0, Sub_date: '2025-11-30T12:34:00' } ] } }
-        },
-
-        {
-          name: 'Module quiz stats (stored proc GetQuizPerformanceStats)',
-          method: 'GET',
-          path: '/modules/{module_id}/quiz-stats',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { query: { module_id: 'string (path)', min_submissions: 'int (default 1)' } },
-          output: { status: 'success', rows: [{ QuizID: 'string', AvgScore: 'number', NumSubmissions: 'int' }] },
-          examples: { response: { status: 'success', rows: [ { QuizID: 'QUIZ001', AvgScore: 78.25, NumSubmissions: 12 } ] } }
-        }
-
-      ]
-    },
-
-
-    /* =====================
-       routes_enrollment.py
-       Enrollment, Payment, Certificate
-       ===================== */
-    {
-      group: 'routes_enrollment.py',
-      description: 'Enrollment, payment and certificate endpoints. See ENROLLMENT, PAYMENT, CERTIFICATE tables in DDL/models.',
-      routes: [
-
-        {
-          name: 'Create enrollment',
-          method: 'POST',
-          path: '/enroll',
-          auth: 'cookie',
-          roles: ['tutee'],
-          input: { body: { CourseID: 'string', PaymentID: 'string', StudentID: 'string (optional, defaults to current user)' } },
-          output: { status: 'created', EnrollmentID: 'string' },
-          examples: { request: { CourseID: 'CRS00001', PaymentID: 'PAY0001' }, response: { status: 'created', enrollment_id: 'ENR0001' } }
-        },
-
-        {
-          name: 'Create payment',
-          method: 'POST',
-          path: '/payments',
-          auth: 'cookie',
-          roles: ['tutor','tutee','admin'],
-          input: { body: { Amount: 'int (>=0)', Payment_method: "enum('Credit Card','Debit Card','PayPal','Bank Transfer','Cash')", UserID: 'string (optional)' } },
-          output: { status: 'created', PaymentID: 'string' },
-          examples: { request: { Amount: 200, Payment_method: 'Credit Card' }, response: { status: 'created', payment_id: 'PAY0001' } }
-        },
-
-        {
-          name: 'Create certificate',
-          method: 'POST',
-          path: '/certificates',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { CourseID: 'string', StudentID: 'string', Certificate_number: 'string', Expiry_date: 'YYYY-MM-DD (optional)' } },
-          output: { status: 'created', CertificateID: 'string' },
-          examples: { request: { CourseID: 'CRS00001', StudentID: 'USR00006', Certificate_number: 'CERT-2025-0001' }, response: { status: 'created', certificate_id: 'CERT001' } }
-        }
-
-      ]
-    },
-
-
-    /* =====================
-       routes_resource.py
-       RESOURCE and PROVIDE_RESOURCE
-       ===================== */
-    {
-      group: 'routes_resource.py',
-      description: 'Resource CRUD and ProvideResource (lesson->resource) mapping endpoints. Follows RESOURCE and PROVIDE_RESOURCE tables.',
-      routes: [
-
-        {
-          name: 'Create resource',
-          method: 'POST',
-          path: '/resources',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { File_Name: 'string (required)', File_link: 'string (required)', External_link: 'string (optional)' } },
-          output: { status: 'created', ResourceID: 'string' },
-          examples: { request: { File_Name: 'slides.pdf', File_link: 'https://cdn.example/slides.pdf' }, response: { status: 'created', resource_id: 'RES001' } }
-        },
-
-        {
-          name: 'Get resource',
-          method: 'GET',
-          path: '/resources/{resource_id}',
-          auth: 'cookie',
+          path: '',
+          subPath: '/instructors/{user_id}/courses',
+          auth: true,
           roles: ['any'],
-          input: { path: { resource_id: 'string' } },
-          output: { status: 'success', resource: { ResourceID: 'string', File_Name: 'string', File_link: 'string', External_link: 'string?' } },
-          examples: { response: { status: 'success', resource: { ResourceID: 'RES001', File_Name: 'slides.pdf', File_link: 'https://cdn.example/slides.pdf' } } }
+          description: 'Get all courses taught by instructor',
+          input: { path: { user_id: 'string(10)' } },
+          output: { status: 'success', count: 'integer' }
         },
-
         {
-          name: 'Provide resource to lesson',
-          method: 'POST',
-          path: '/provide',
-          auth: 'cookie',
-          roles: ['tutor','admin'],
-          input: { body: { ResourceID: 'string', LessonID: 'string' } },
-          output: { status: 'provided', ResourceID: 'string', LessonID: 'string' },
-          examples: { request: { ResourceID: 'RES001', LessonID: 'L001' }, response: { status: 'provided', ResourceID: 'RES001', LessonID: 'L001' } }
+          name: 'Get Course Instructors',
+          method: 'GET',
+          path: '',
+          subPath: '/courses/{course_id}/instructors',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Get all instructors teaching course',
+          input: { path: { course_id: 'string(10)' } },
+          output: { status: 'success', count: 'integer' }
+        },
+        {
+          name: 'Remove Instructor',
+          method: 'DELETE',
+          path: '',
+          subPath: '/instruct/{user_id}/{course_id}',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Unassign instructor from course',
+          input: {
+            path: { user_id: 'string(10)', course_id: 'string(10)' }
+          },
+          output: { status: 'deleted' },
+          errors: ['404: Instructor assignment not found']
+        },
+        {
+          name: 'Check is Instructor of Course',
+          method: 'GET',
+          path: '',
+          subPath: '/instruct/is/{user_id}/{course_id}',
+          auth: true,
+          roles: ['any'],
+          description: 'Verify if user is instructor for specific course',
+          input: { path: { user_id: 'string(10)', course_id: 'string(10)' } },
+          output: { status: 'success', is_instructor: 'boolean' }
         }
-
       ]
     },
 
-
-    /* =====================
-       routes_utils.py
-       health / root
-       ===================== */
+    /* =====================================================
+       COURSES & CONTENT (routes_course.py)
+       ===================================================== */
     {
-      group: 'routes_utils.py',
-      description: 'Health-check and root message.',
-      routes: [
-        { name: 'Health check', method: 'GET', path: '/health', auth: 'none', input: null, output: { status: 'ok' }, examples: { response: { status: 'ok' } } },
-        { name: 'Root', method: 'GET', path: '/', auth: 'none', input: null, output: { message: 'string' }, examples: { response: { message: 'Backend is up and running. Navigate to ./docs for Swagger contents' } } }
-      ]
-    }
+      group: 'Courses & Content',
+      basePath: '/courses',
+      description: 'Course management, modules, content (text/video/image), categories, and prerequisites.',
+      endpoints: [
+        {
+          name: 'List All Courses',
+          method: 'GET',
+          path: '',
+          auth: true,
+          roles: ['any'],
+          description: 'Get all courses with optional filtering',
+          input: {
+            query: {
+              limit: 'integer - default 100, max 100',
+              difficulty: "string - optional filter: 'Beginner' | 'Intermediate' | 'Advanced'"
+            }
+          },
+          output: {
+            status: 'success',
+            count: 'integer',
+            courses: 'array of { CourseID, Title, Difficulty, Language, Description }'
+          },
+          example: {
+            response: {
+              status: 'success',
+              count: 6,
+              courses: [
+                {
+                  CourseID: 'CRS00001',
+                  Title: 'Python cho DeepLearning',
+                  Difficulty: 'Intermediate',
+                  Language: 'Tiếng Việt',
+                  Description: 'Học cách xây dựng, huấn luyện...'
+                }
+              ]
+            }
+          }
+        },
+        {
+          name: 'Create Course',
+          method: 'POST',
+          path: '',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Create new course. CourseID auto-generated if not provided.',
+          input: {
+            body: {
+              Title: 'string(200) - required, min 5 chars, NVARCHAR',
+              Language: 'string(50) - required, e.g. "Tiếng Việt", "English"',
+              Difficulty: "string(20) - optional: 'Beginner' | 'Intermediate' | 'Advanced'",
+              Description: 'string(MAX) - optional, NVARCHAR'
+            }
+          },
+          output: { status: 'created', course_id: 'string(10)', title: 'string(200)' },
+          example: {
+            request: {
+              Title: 'Machine Learning Advanced',
+              Language: 'English',
+              Difficulty: 'Advanced'
+            },
+            response: { status: 'created', course_id: 'CRS00007', title: 'Machine Learning Advanced' }
+          },
+          errors: ['400: Title must be at least 5 characters']
+        },
+        {
+          name: 'Get Course by ID',
+          method: 'GET',
+          path: '',
+          subPath: '/id/{course_id}',
+          auth: true,
+          roles: ['any'],
+          description: 'Get course details with categories and prerequisites',
+          input: { path: { course_id: 'string(10)' } },
+          output: {
+            status: 'success',
+            course: {
+              CourseID: 'string(10)',
+              Title: 'string(200)',
+              Difficulty: 'string(20)',
+              Language: 'string(50)',
+              Description: 'string(MAX)',
+              Categories: 'array of strings',
+              Prerequisites: 'array of CourseIDs'
+            }
+          },
+          errors: ['404: Course not found']
+        },
+        {
+          name: 'Update Course',
+          method: 'PUT',
+          path: '',
+          subPath: '/{course_id}',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Update course information',
+          input: {
+            path: { course_id: 'string(10)' },
+            body: {
+              Title: 'string(200) - optional',
+              Description: 'string(MAX) - optional',
+              Difficulty: 'string(20) - optional',
+              Language: 'string(50) - optional'
+            }
+          },
+          output: { status: 'updated', course_id: 'string(10)' }
+        },
+        {
+          name: 'Delete Course',
+          method: 'DELETE',
+          path: '',
+          subPath: '/{course_id}',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Delete course and all related data (cascading)',
+          input: { path: { course_id: 'string(10)' } },
+          output: { status: 'deleted', course_id: 'string(10)' }
+        },
+        {
+          name: 'Search Courses by Title',
+          method: 'GET',
+          path: '',
+          subPath: '/search',
+          auth: true,
+          roles: ['any'],
+          description: 'Search courses by title (LIKE query)',
+          input: {
+            query: {
+              title: 'string - search term (required, min 1 char)'
+            }
+          },
+          output: {
+            status: 'success',
+            count: 'integer',
+            courses: 'array of { CourseID, Title }'
+          }
+        },
 
-  ]
-};
+        /* Categories */
+        {
+          name: 'Add Category to Course',
+          method: 'POST',
+          path: '',
+          subPath: '/{course_id}/categories',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Add category tag to course (composite key: CourseID + Category)',
+          input: {
+            path: { course_id: 'string(10)' },
+            body: {
+              category: 'string(100) - e.g. "Python", "Web Development", NVARCHAR'
+            }
+          },
+          output: { status: 'added', category: 'string(100)' },
+          errors: ['400: Duplicate category']
+        },
+        {
+          name: 'Get Course Categories',
+          method: 'GET',
+          path: '',
+          subPath: '/{course_id}/categories',
+          auth: true,
+          roles: ['any'],
+          description: 'List all categories for course',
+          input: { path: { course_id: 'string(10)' } },
+          output: { status: 'success', categories: 'array of strings' }
+        },
+        {
+          name: 'Remove Category',
+          method: 'DELETE',
+          path: '',
+          subPath: '/{course_id}/categories/{category}',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Remove category from course',
+          input: {
+            path: { course_id: 'string(10)', category: 'string(100)' }
+          },
+          output: { status: 'deleted' },
+          errors: ['404: Category not found']
+        },
 
-export default apiSpec;
+        /* Prerequisites */
+        {
+          name: 'Add Prerequisite',
+          method: 'POST',
+          path: '',
+          subPath: '/{course_id}/prerequisites',
+          auth: true,
+          roles: ['tutor', 'admin'],
+          description: 'Require another course to be completed before taking this course',
+          input: {
+            path: { course_id: 'string(10)' },
+            body: {
+              required_course_id: 'string(10) - prerequisite course ID'
+            }
+          },
+          output: { status: 'added', prerequisite: 'string(10)' },
+          example: {
+            request: { required_course_id: 'CRS00005' },
+            response: { status: 'added', prerequisite: 'CRS00005' }
+          },
+          errors: [
+            '400: A course cannot be its own prerequisite',
+            '400: Duplicate prerequisite'
+          ]
+        },
+        {
+          name: 'Get Prerequisites',
+          method: 'GET',
+          path: '',
+          subPath: '/{course_id}/prerequisites',
+          auth: true,
+          roles: ['any'],
+          description: 'List all prerequisite courses',
+          input: { path: { course_id: 'string(10)' } },
+          output: {
+            status: 'success',
+            prerequisites: 'array of CourseIDs'
+          }
+        },
+        {
+          name: 'Check Prerequisites Completion',
+          method: 'GET',
+          path: '',
+          subPath: '/{course_id}/prerequisites/f',
+          auth: true,
+          roles: ['tutee'],
+          description: 'Check if student has completed all prerequisites for course (uses CheckPrerequisiteCompletion procedure)',
+          input: { path: { course_id: 'string(10)' } },
+          output: {
+            status: 'success',
+            count: 'integer',
+            missing_prereqs: 'array of missing prerequisite CourseIDs'
+          },
+          note: 'Empty array means all prerequisites are satisfied'
+        },
+        {
+          name: 'Remove Prerequisite',
+          method: 'DELETE',
+          path: '',
+          subPath: '/{course_id}/prerequisites/{required_course_id}',
+          auth: true,
