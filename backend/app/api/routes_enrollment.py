@@ -27,7 +27,7 @@ def create_enrollment(data: Dict[str, Any] = Body(...), current_user: CurrentUse
 
 @router.get("/enrollments/me")
 def my_enrollments(current_user: CurrentUser = Depends(get_current_user_from_session)):
-	if current_user.role != 'tutee':
+	if current_user.role == 'tutor':
 		raise HTTPException(status_code=403, detail="Not authorized, requires STUDENT role")
 
 	items = enrollment_service.get_student_enrollments(current_user.user_id)
@@ -161,11 +161,11 @@ def get_payments_by_user(user_id: str, current_user: CurrentUser = Depends(get_c
 
 
 @router.get("/payments")
-def get_all_payments(skip: int = 0, limit: int = 100, current_user: CurrentUser = Depends(get_current_user_from_session)):
+def get_all_payments(limit: int = 100, current_user: CurrentUser = Depends(get_current_user_from_session)):
 	"""Get all payment"""
 	if current_user.role == 'tutee':
 		raise HTTPException(status_code=403, detail="Not authorized, requires admin role")
-	items = payment_service.get_all_payments(skip=skip, limit=limit)
+	items = payment_service.get_all_payments(limit=limit)
 	return {"status": "success", "count": len(items)}
 
 

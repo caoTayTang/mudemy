@@ -21,25 +21,25 @@ def create_resource(data: Dict[str, Any] = Body(...), current_user: CurrentUser 
 	return JSONResponse(status_code=201, content={"status": "created", "resource_id": r.ResourceID})
 
 
-@router.get("/resources/{resource_id}")
+@router.get("/resources/id/{resource_id}")
 def read_resource(resource_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
 	r = resource_service.get_resource_by_id(resource_id)
 	if not r:
-		raise HTTPException(status_code=404, detail="Resource not found")
+		raise HTTPException(status_code=404, detail=f"Resource not found: {resource_id}")
 	return {"status": "success", "resource": {"ResourceID": r.ResourceID, "File_Name": getattr(r, 'File_Name', None), "External_link": getattr(r, 'External_link', None)}}
 
 
 @router.get("/resources")
-def list_resources(skip: int = 0, limit: int = 100, current_user: CurrentUser = Depends(get_current_user_from_session)):
+def list_resources(limit: int = 100, current_user: CurrentUser = Depends(get_current_user_from_session)):
 	# resources are generally viewable by authenticated users
-	items = resource_service.get_all_resources(skip=skip, limit=limit)
+	items = resource_service.get_all_resources(limit=limit)
 	return {"status": "success", "count": len(items), "resources": [{"ResourceID": i.ResourceID, "File_Name": getattr(i, 'File_Name', None)} for i in items]}
 
 
 @router.get("/resources/search")
 def search_resources(name: str = Query(...), current_user: CurrentUser = Depends(get_current_user_from_session)):
 	items = resource_service.search_resources_by_name(name)
-	return {"status": "success", "count": len(items)}
+	return {"status": "success", "count": len(items), "resources": [{"ResourceID": i.ResourceID, "File_Name": getattr(i, 'File_Name', None)} for i in items]}
 
 
 @router.get("/resources/external")

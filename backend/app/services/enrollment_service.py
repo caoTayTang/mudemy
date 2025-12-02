@@ -203,10 +203,10 @@ class PaymentService:
                 Payment.Payment_date <= end_date
             ).all()
     
-    def get_all_payments(self, skip: int = 0, limit: int = 100) -> List[Payment]:
+    def get_all_payments(self, limit: int = 100) -> List[Payment]:
         """Get all payments with pagination"""
         with self.db_session() as session:
-            return session.query(Payment).offset(skip).limit(limit).all()
+            return session.query(Payment).limit(limit).all()
     
     def update_payment(self, payment_id: str, update_data: Dict[str, Any]) -> Optional[Payment]:
         """Update payment information"""

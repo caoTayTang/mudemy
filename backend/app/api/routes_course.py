@@ -31,7 +31,6 @@ category_service = CategoryService(mudemy_session)
 
 @router.get("/courses")
 def get_all_courses(
-    skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     difficulty: Optional[str] = None,
     current_user: CurrentUser = Depends(get_current_user_from_session)
@@ -40,7 +39,7 @@ def get_all_courses(
     if difficulty:
         courses = course_service.get_courses_by_difficulty(difficulty)
     else:
-        courses = course_service.get_all_courses(skip, limit)
+        courses = course_service.get_all_courses(limit)
     
     return {
         "status": "success",
@@ -80,7 +79,7 @@ def create_course(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/courses/{course_id}")
+@router.get("/courses/id/{course_id}")
 def get_course(
     course_id: str,
     current_user: CurrentUser = Depends(get_current_user_from_session)

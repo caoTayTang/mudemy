@@ -31,7 +31,7 @@ class ResourceService:
     def get_all_resources(self, skip: int = 0, limit: int = 100) -> List[Resource]:
         """Get all resources with pagination"""
         with self.db_session() as session:
-            return session.query(Resource).offset(skip).limit(limit).all()
+            return session.query(Resource).limit(limit).all()
     
     def search_resources_by_name(self, name: str) -> List[Resource]:
         """Search resources by file name"""

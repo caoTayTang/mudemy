@@ -32,10 +32,10 @@ class CourseService:
         with self.db_session() as session:
             return session.query(Course).filter(Course.CourseID == course_id).first()
     
-    def get_all_courses(self, skip: int = 0, limit: int = 100) -> List[Course]:
+    def get_all_courses(self, limit: int = 100) -> List[Course]:
         """Get all courses with pagination"""
         with self.db_session() as session:
-            return session.query(Course).offset(skip).limit(limit).all()
+            return session.query(Course).limit(limit).all()
     
     def update_course(self, course_id: str, update_data: Dict[str, Any]) -> Optional[Course]:
         """Update course information"""
