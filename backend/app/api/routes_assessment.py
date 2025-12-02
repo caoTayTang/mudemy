@@ -49,11 +49,19 @@ def read_assignment(
     ass_id: str, 
     current_user: CurrentUser = Depends(get_current_user_from_session)
 ):
-    """Get details for a specific assignment"""
-    assignment = assignment_service.get_assignment_by_id(ass_id)
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
-    return {"status": "success", "assignment": {"AssID": assignment.AssID, "Title": assignment.Title, "ModuleID": assignment.ModuleID}}
+	assignment = assignment_service.get_assignment_by_id(ass_id)
+	if not assignment:
+		raise HTTPException(status_code=404, detail="Assignment not found")
+	return {
+		"status": "success",
+		"assignment": {
+			"AssID": assignment.AssID,
+			"Deadline": assignment.Deadline,
+			"Description": assignment.Description,
+			"Title": assignment.Title,
+			"ModuleID": assignment.ModuleID
+		}
+	}
 
 @router.put("/assignments/{ass_id}")
 def update_assignment(
@@ -88,13 +96,18 @@ def get_assignments_by_module(
     module_id: str,
     current_user: CurrentUser = Depends(get_current_user_from_session)
 ):
-    """Get all assignments within a specific module"""
-    assignments = assignment_service.get_assignments_by_module(module_id)
-    return {
-        "status": "success",
-        "count": len(assignments),
-        "assignments": [{"AssID": a.AssID, "Title": a.Title} for a in assignments]
-    }
+	assignments = assignment_service.get_assignments_by_module(module_id)
+	return {
+		"status": "success",
+		"count": len(assignments),
+		"assignments": [{
+			"AssID": a.AssID,
+			"Deadline": a.Deadline,
+			"Description": a.Description,
+			"Title": a.Title,
+			"ModuleID": a.ModuleID
+		} for a in assignments]
+	}
 
 # ============================================================
 # QUIZ ROUTES
@@ -119,11 +132,20 @@ def read_quiz(
     quiz_id: str, 
     current_user: CurrentUser = Depends(get_current_user_from_session)
 ):
-    """Get details for a specific quiz"""
-    quiz = quiz_service.get_quiz_by_id(quiz_id)
-    if not quiz:
-        raise HTTPException(status_code=404, detail="Quiz not found")
-    return {"status": "success", "quiz": {"QuizID": quiz.QuizID, "Title": quiz.Title, "ModuleID": quiz.ModuleID}}
+	quiz = quiz_service.get_quiz_by_id(quiz_id)
+	if not quiz:
+		raise HTTPException(status_code=404, detail="Quiz not found")
+	return {
+		"status": "success",
+		"quiz": {
+			"QuizID": quiz.QuizID,
+			"Time_limit": quiz.Time_limit,
+			"Num_attempt": quiz.Num_attempt,
+			"Deadline": quiz.Deadline,
+			"Title": quiz.Title,
+			"ModuleID": quiz.ModuleID
+		}
+	}
     
 @router.put("/quizzes/{quiz_id}")
 def update_quiz(
@@ -158,13 +180,19 @@ def get_quizzes_by_module(
     module_id: str,
     current_user: CurrentUser = Depends(get_current_user_from_session)
 ):
-    """Get all quizzes within a specific module"""
-    quizzes = quiz_service.get_quizzes_by_module(module_id)
-    return {
-        "status": "success",
-        "count": len(quizzes),
-        "quizzes": [{"QuizID": q.QuizID, "Title": q.Title} for q in quizzes]
-    }
+	quizzes = quiz_service.get_quizzes_by_module(module_id)
+	return {
+		"status": "success",
+		"count": len(quizzes),
+		"quizzes": [{
+			"QuizID": q.QuizID,
+			"Time_limit": q.Time_limit,
+			"Num_attempt": q.Num_attempt,
+			"Deadline": q.Deadline,
+			"Title": q.Title,
+			"ModuleID": q.ModuleID
+		} for q in quizzes]
+	}
 
 # ============================================================
 # QUESTION & ANSWER ROUTES
@@ -191,13 +219,17 @@ def get_questions_for_quiz(
     quiz_id: str,
     current_user: CurrentUser = Depends(get_current_user_from_session)
 ):
-    """List all questions associated with a quiz"""
-    questions = question_service.get_questions_by_quiz(quiz_id)
-    return {
-        "status": "success",
-        "count": len(questions),
-        "questions": [{"QuestionID": q.QuestionID, "Content": q.Content} for q in questions]
-    }
+	questions = question_service.get_questions_by_quiz(quiz_id)
+	return {
+		"status": "success",
+		"count": len(questions),
+		"questions": [{
+			"QuestionID": q.QuestionID,
+			"QuizID": q.QuizID,
+			"Correct_answer": q.Correct_answer,
+			"Content": q.Content
+		} for q in questions]
+	}
 
 @router.put("/quizzes/{quiz_id}/questions/{question_id}")
 def update_question(
@@ -264,17 +296,21 @@ def get_answers_for_question(
     question_id: str,
     current_user: CurrentUser = Depends(get_current_user_from_session)
 ):
-    """List all possible answers for a question"""
-    question = question_service.get_question_by_id(question_id)
-    if not question:
-        raise HTTPException(status_code=404, detail="Question not found")
-        
-    answers = answer_service.get_answers_by_question(question_id, question.QuizID)
-    return {
-        "status": "success",
-        "count": len(answers),
-        "answers": [{"AnswerID": a.AnswerID, "Answer": a.Answer} for a in answers]
-    }
+	question = question_service.get_question_by_id(question_id)
+	if not question:
+		raise HTTPException(status_code=404, detail="Question not found")
+		
+	answers = answer_service.get_answers_by_question(question_id, question.QuizID)
+	return {
+		"status": "success",
+		"count": len(answers),
+		"answers": [{
+			"QuestionID": a.QuestionID,
+			"QuizID": a.QuizID,
+			"AnswerID": a.AnswerID,
+			"Answer": a.Answer
+		} for a in answers]
+	}
 
 @router.put("/quizzes/{quiz_id}/questions/{question_id}/answers/{answer_id}")
 def update_answer(
@@ -346,15 +382,21 @@ def get_assignment_submissions(
     ass_id: str,
     current_user: CurrentUser = Depends(get_current_user_from_session)
 ):
-    """Get all submissions for an assignment (Instructor only)"""
-    if current_user.role == 'tutee':
-        raise HTTPException(status_code=403, detail="Not authorized, requires INSTRUCTOR role")
-    submissions = assign_submission_service.get_submissions_by_assignment(ass_id)
-    return {
-        "status": "success",
-        "count": len(submissions),
-        "submissions": [{"SubID": s.SubID, "UserID": s.UserID, "Grade": s.Grade} for s in submissions]
-    }
+	if current_user.role == 'tutee':
+		raise HTTPException(status_code=403, detail="Not authorized, requires INSTRUCTOR role")
+	submissions = assign_submission_service.get_submissions_by_assignment(ass_id)
+	return {
+		"status": "success",
+		"count": len(submissions),
+		"submissions": [{
+			"SubID": s.SubID,
+			"UserID": s.UserID,
+			"AssID": s.AssID,
+			"Sub_content": s.Sub_content,
+			"Grade": s.Grade,
+			"Sub_date": s.Sub_date
+		} for s in submissions]
+	}
     
 @router.put("/submissions/assignment/{sub_id}/grade")
 def grade_assignment_submission(
@@ -398,15 +440,21 @@ def get_quiz_submissions(
     quiz_id: str,
     current_user: CurrentUser = Depends(get_current_user_from_session)
 ):
-    """Get all submissions for an quiz (Instructor only)"""
-    if current_user.role == 'tutee':
-        raise HTTPException(status_code=403, detail="Not authorized, requires INSTRUCTOR role")
-    submissions = quiz_submission_service.get_submissions_by_quiz(quiz_id)
-    return {
-        "status": "success",
-        "count": len(submissions),
-        "submissions": [{"SubID": s.SubID, "UserID": s.UserID, "Grade": s.Grade} for s in submissions]
-    }
+	if current_user.role == 'tutee':
+		raise HTTPException(status_code=403, detail="Not authorized, requires INSTRUCTOR role")
+	submissions = quiz_submission_service.get_submissions_by_quiz(quiz_id)
+	return {
+		"status": "success",
+		"count": len(submissions),
+		"submissions": [{
+			"SubID": s.SubID,
+			"UserID": s.UserID,
+			"QuizID": s.QuizID,
+			"Sub_content": s.Sub_content,
+			"Grade": s.Grade,
+			"Sub_date": s.Sub_date
+		} for s in submissions]
+	}
     
 @router.put("/submissions/quiz/{sub_id}/grade")
 def grade_quiz_submission(

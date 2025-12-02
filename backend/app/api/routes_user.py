@@ -20,7 +20,25 @@ def get_me(current_user: CurrentUser = Depends(get_current_user_from_session)):
 	u = user_service.get_user_by_id(current_user.user_id)
 	if not u:
 		raise HTTPException(status_code=404, detail="User not found")
-	return {"status": "success", "user": {"UserID": u.UserID, "User_name": getattr(u, 'User_name', None), "Full_name": getattr(u, 'Full_name', None)}}
+	return {
+		"status": "success",
+		"user": {
+			"UserID": u.UserID,
+			"User_name": u.User_name,
+			"Email": u.Email,
+			"Full_name": u.Full_name,
+			"City": u.City,
+			"Country": u.Country,
+			"Phone": u.Phone,
+			"Date_of_birth": u.Date_of_birth,
+			"Last_login": u.Last_login,
+			"IFlag": u.IFlag,
+			"Bio_text": u.Bio_text,
+			"Year_of_experience": u.Year_of_experience,
+			"SFlag": u.SFlag,
+			"Total_enrollments": u.Total_enrollments
+		}
+	}
 
 
 @router.post("/users")
@@ -34,22 +52,58 @@ def create_user(data: Dict[str, Any] = Body(...)):
 
 @router.get("/users")
 def list_users(limit: int = 100, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	# only instructors (or higher) can list all users
 	if current_user.role == 'tutee':
 		raise HTTPException(status_code=403, detail="Not authorized")
 
 	users = user_service.get_all_users(limit=limit)
-	return {"status": "success", "count": len(users),  "user": [{"UserID": u.UserID, "User_name": getattr(u, 'User_name', None), "Full_name": getattr(u, 'Full_name', None)} for u in users]}
+	return {
+		"status": "success",
+		"count": len(users),
+		"users": [{
+			"UserID": u.UserID,
+			"User_name": u.User_name,
+			"Email": u.Email,
+			"Full_name": u.Full_name,
+			"City": u.City,
+			"Country": u.Country,
+			"Phone": u.Phone,
+			"Date_of_birth": u.Date_of_birth,
+			"Last_login": u.Last_login,
+			"IFlag": u.IFlag,
+			"Bio_text": u.Bio_text,
+			"Year_of_experience": u.Year_of_experience,
+			"SFlag": u.SFlag,
+			"Total_enrollments": u.Total_enrollments
+		} for u in users]
+	}
 
 
-@router.get("/users/{user_id}")
+@router.get("/users/id/{user_id}")
 def get_user(user_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
 	u = user_service.get_user_by_id(user_id)
 	if not u:
 		raise HTTPException(status_code=404, detail="User not found")
 	if current_user.role == 'tutee' and current_user.user_id != user_id:
 		raise HTTPException(status_code=403, detail="Not authorized to view this user")
-	return {"status": "success", "user": {"UserID": u.UserID, "User_name": getattr(u, 'User_name', None), "Full_name": getattr(u, 'Full_name', None)}}
+	return {
+		"status": "success",
+		"user": {
+			"UserID": u.UserID,
+			"User_name": u.User_name,
+			"Email": u.Email,
+			"Full_name": u.Full_name,
+			"City": u.City,
+			"Country": u.Country,
+			"Phone": u.Phone,
+			"Date_of_birth": u.Date_of_birth,
+			"Last_login": u.Last_login,
+			"IFlag": u.IFlag,
+			"Bio_text": u.Bio_text,
+			"Year_of_experience": u.Year_of_experience,
+			"SFlag": u.SFlag,
+			"Total_enrollments": u.Total_enrollments
+		}
+	}
 
 
 @router.put("/users/{user_id}")
@@ -86,7 +140,21 @@ def list_instructors(current_user: CurrentUser = Depends(get_current_user_from_s
 	if current_user.role == 'tutee':
 		raise HTTPException(status_code=403, detail="Not authorized")
 	items = user_service.get_instructors()
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"instructors": [{
+			"UserID": u.UserID,
+			"User_name": u.User_name,
+			"Email": u.Email,
+			"Full_name": u.Full_name,
+			"City": u.City,
+			"Country": u.Country,
+			"Phone": u.Phone,
+			"Bio_text": u.Bio_text,
+			"Year_of_experience": u.Year_of_experience
+		} for u in items]
+	}
 
 
 @router.get("/users/students")
@@ -94,8 +162,19 @@ def list_students(current_user: CurrentUser = Depends(get_current_user_from_sess
 	if current_user.role == 'tutee':
 		raise HTTPException(status_code=403, detail="Not authorized")
 	items = user_service.get_students()
-	return {"status": "success", "count": len(items)}
-
+	return {
+		"status": "success",
+		"count": len(items),
+		"students": [{
+			"UserID": u.UserID,
+			"User_name": u.User_name,
+			"Email": u.Email,
+			"Full_name": u.Full_name,
+			"City": u.City,
+			"Country": u.Country,
+			"Total_enrollments": u.Total_enrollments
+		} for u in items]
+	}
 
 @router.post("/users/{user_id}/last-login")
 def touch_last_login(user_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
@@ -124,7 +203,18 @@ def search_users(name: str = Query(...), current_user: CurrentUser = Depends(get
 	if current_user.role == 'tutee':
 		raise HTTPException(status_code=403, detail="Not authorized")
 	items = user_service.search_users_by_name(name)
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"users": [{
+			"UserID": u.UserID,
+			"User_name": u.User_name,
+			"Email": u.Email,
+			"Full_name": u.Full_name,
+			"City": u.City,
+			"Country": u.Country
+		} for u in items]
+	}
 
 
 # ---------------------------
@@ -157,7 +247,15 @@ def get_user_lessons(user_id: str, current_user: CurrentUser = Depends(get_curre
 	if current_user.role == 'tutee' and user_id != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized")
 	items = take_service.get_user_lessons(user_id)
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"lessons": [{
+			"UserID": t.UserID,
+			"LessonID": t.LessonID,
+			"is_finished": t.is_finished
+		} for t in items]
+	}
 
 
 @router.post("/takes/{user_id}/{lesson_id}/finish")
@@ -219,7 +317,14 @@ def get_user_interests(user_id: str, current_user: CurrentUser = Depends(get_cur
 	if current_user.role == 'tutee' and user_id != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized")
 	items = interests_service.get_user_interests(user_id)
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"interests": [{
+			"UserID": i.UserID,
+			"Interest": i.Interest
+		} for i in items]
+	}
 
 
 @router.delete("/users/{user_id}/interests")
@@ -255,7 +360,14 @@ def get_instructor_courses(user_id: str, current_user: CurrentUser = Depends(get
 	if current_user.role == 'tutee' and user_id != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized")
 	items = instruct_service.get_instructor_courses(user_id)
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"courses": [{
+			"UserID": i.UserID,
+			"CourseID": i.CourseID
+		} for i in items]
+	}
 
 
 @router.get("/courses/{course_id}/instructors")
@@ -263,7 +375,14 @@ def get_course_instructors(course_id: str, current_user: CurrentUser = Depends(g
 	if current_user.role == 'tutee':
 		raise HTTPException(status_code=403, detail="Not authorized")
 	items = instruct_service.get_course_instructors(course_id)
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"instructors": [{
+			"UserID": i.UserID,
+			"CourseID": i.CourseID
+		} for i in items]
+	}
 
 
 @router.delete("/instruct/{user_id}/{course_id}")
@@ -303,7 +422,14 @@ def get_user_qualifications(user_id: str, current_user: CurrentUser = Depends(ge
 	if current_user.role == 'tutee' and user_id != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized")
 	items = qualification_service.get_user_qualifications(user_id)
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"qualifications": [{
+			"UserID": q.UserID,
+			"Qualification": q.Qualification
+		} for q in items]
+	}
 
 @router.delete("/users/{user_id}/qualifications/{qualification}")
 def remove_user_qualifications(user_id: str, qualification:str, current_user: CurrentUser = Depends(get_current_user_from_session)):

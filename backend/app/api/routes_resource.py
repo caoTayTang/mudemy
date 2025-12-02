@@ -26,27 +26,45 @@ def read_resource(resource_id: str, current_user: CurrentUser = Depends(get_curr
 	r = resource_service.get_resource_by_id(resource_id)
 	if not r:
 		raise HTTPException(status_code=404, detail=f"Resource not found: {resource_id}")
-	return {"status": "success", "resource": {"ResourceID": r.ResourceID, "File_Name": getattr(r, 'File_Name', None), "External_link": getattr(r, 'External_link', None)}}
+	return {
+		"status": "success",
+		"resource": {
+			"ResourceID": r.ResourceID,
+			"File_Name": r.File_Name,
+			"File_link": r.File_link,
+			"External_link": r.External_link
+		}
+	}
 
 
 @router.get("/resources")
 def list_resources(limit: int = 100, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	# resources are generally viewable by authenticated users
 	items = resource_service.get_all_resources(limit=limit)
-	return {"status": "success", "count": len(items), "resources": [{"ResourceID": i.ResourceID, "File_Name": getattr(i, 'File_Name', None)} for i in items]}
+	return {
+		"status": "success",
+		"count": len(items),
+		"resources": [{
+			"ResourceID": r.ResourceID,
+			"File_Name": r.File_Name,
+			"File_link": r.File_link,
+			"External_link": r.External_link
+		} for r in items]
+	}
 
 
 @router.get("/resources/search")
 def search_resources(name: str = Query(...), current_user: CurrentUser = Depends(get_current_user_from_session)):
 	items = resource_service.search_resources_by_name(name)
-	return {"status": "success", "count": len(items), "resources": [{"ResourceID": i.ResourceID, "File_Name": getattr(i, 'File_Name', None)} for i in items]}
-
-
-@router.get("/resources/external")
-def resources_with_external_links(current_user: CurrentUser = Depends(get_current_user_from_session)):
-	items = resource_service.get_resources_with_external_links()
-	return {"status": "success", "count": len(items), "resources": [{"ResourceID": i.ResourceID, "External_link": getattr(i, 'External_link', None)} for i in items]}
-
+	return {
+		"status": "success",
+		"count": len(items),
+		"resources": [{
+			"ResourceID": r.ResourceID,
+			"File_Name": r.File_Name,
+			"File_link": r.File_link,
+			"External_link": r.External_link
+		} for r in items]
+	}
 
 @router.put("/resources/{resource_id}")
 def update_resource(resource_id: str, data: Dict[str, Any] = Body(...), current_user: CurrentUser = Depends(get_current_user_from_session)):
@@ -123,14 +141,26 @@ def provide_resource(data: Dict[str, Any] = Body(...), current_user: CurrentUser
 @router.get("/lessons/{lesson_id}/resources")
 def get_resources_by_lesson(lesson_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
 	items = provide_service.get_resources_by_lesson(lesson_id)
-	return {"status": "success", "count": len(items), "provides": [{"ResourceID": p.ResourceID, "LessonID": p.LessonID} for p in items]}
-
+	return {
+		"status": "success",
+		"count": len(items),
+		"resources": [{
+			"ResourceID": p.ResourceID,
+			"LessonID": p.LessonID
+		} for p in items]
+	}
 
 @router.get("/resources/{resource_id}/lessons")
 def get_lessons_by_resource(resource_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
 	items = provide_service.get_lessons_by_resource(resource_id)
-	return {"status": "success", "count": len(items), "provides": [{"ResourceID": p.ResourceID, "LessonID": p.LessonID} for p in items]}
-
+	return {
+		"status": "success",
+		"count": len(items),
+		"lessons": [{
+			"ResourceID": p.ResourceID,
+			"LessonID": p.LessonID
+		} for p in items]
+	}
 
 @router.delete("/provide/{resource_id}/{lesson_id}")
 def remove_resource_from_lesson(resource_id: str, lesson_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):

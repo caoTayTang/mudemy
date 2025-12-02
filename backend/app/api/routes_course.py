@@ -152,7 +152,13 @@ def search_courses(
     return {
         "status": "success",
         "count": len(courses),
-        "courses": [{"CourseID": c.CourseID, "Title": c.Title} for c in courses]
+        "courses": [{
+            "CourseID": c.CourseID,
+            "Title": c.Title,
+            "Difficulty": c.Difficulty,
+            "Language": c.Language,
+            "Description": c.Description
+        } for c in courses]
     }
 
 
@@ -186,6 +192,7 @@ def get_course_categories(
     categories = category_service.get_categories_by_course(course_id)
     return {
         "status": "success",
+        "count": len(categories),
         "categories": [c.Category for c in categories]
     }
 

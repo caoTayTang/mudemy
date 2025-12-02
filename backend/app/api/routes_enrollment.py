@@ -31,7 +31,18 @@ def my_enrollments(current_user: CurrentUser = Depends(get_current_user_from_ses
 		raise HTTPException(status_code=403, detail="Not authorized, requires STUDENT role")
 
 	items = enrollment_service.get_student_enrollments(current_user.user_id)
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"enrollments": [{
+			"EnrollmentID": e.EnrollmentID,
+			"CourseID": e.CourseID,
+			"PaymentID": e.PaymentID,
+			"StudentID": e.StudentID,
+			"Status": e.Status,
+			"Enroll_date": e.Enroll_date
+		} for e in items]
+	}
 
 
 @router.delete("/enrollments/{enrollment_id}")
@@ -58,7 +69,6 @@ def delete_enrollment(enrollment_id: str, current_user: CurrentUser = Depends(ge
 
 @router.get("/enrollments/{enrollment_id}")
 def get_enrollment(enrollment_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	"""Get a enrollment"""
 	e = enrollment_service.get_enrollment_by_id(enrollment_id)
 	if not e:
 		raise HTTPException(status_code=404, detail="Enrollment not found")
@@ -66,17 +76,37 @@ def get_enrollment(enrollment_id: str, current_user: CurrentUser = Depends(get_c
 	if current_user.role == 'tutee' and e.StudentID != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized to view this enrollment")
 
-	return {"status": "success", "enrollment": {"EnrollmentID": e.EnrollmentID, "CourseID": e.CourseID, "StudentID": e.StudentID, "Status": getattr(e, 'Status', None)}}
+	return {
+		"status": "success",
+		"enrollment": {
+			"EnrollmentID": e.EnrollmentID,
+			"CourseID": e.CourseID,
+			"PaymentID": e.PaymentID,
+			"StudentID": e.StudentID,
+			"Status": e.Status,
+			"Enroll_date": e.Enroll_date
+		}
+	}
 
 
 @router.get("/courses/{course_id}/enrollments")
 def get_enrollments_by_course(course_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	"""Get enrollments by course"""
 	if current_user.role == 'tutee':
 		raise HTTPException(status_code=403, detail="Not authorized, requires instructor/admin role")
 
 	items = enrollment_service.get_course_enrollments(course_id)
-	return {"status": "success", "count": len(items), "enrollments": [{"EnrollmentID": i.EnrollmentID, "StudentID": i.StudentID, "Status": getattr(i, 'Status', None)} for i in items]}
+	return {
+		"status": "success",
+		"count": len(items),
+		"enrollments": [{
+			"EnrollmentID": e.EnrollmentID,
+			"CourseID": e.CourseID,
+			"PaymentID": e.PaymentID,
+			"StudentID": e.StudentID,
+			"Status": e.Status,
+			"Enroll_date": e.Enroll_date
+		} for e in items]
+	}
 
 
 @router.put("/enrollments/{enrollment_id}")
@@ -142,31 +172,56 @@ def create_payment(data: Dict[str, Any] = Body(...), current_user: CurrentUser =
 
 @router.get("/payments/{payment_id}")
 def get_payment(payment_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	"""Get a payment"""
 	p = payment_service.get_payment_by_id(payment_id)
 	if not p:
 		raise HTTPException(status_code=404, detail="Payment not found")
-	if current_user.role == 'tutee' and getattr(p, 'UserID', None) != current_user.user_id:
+	if current_user.role == 'tutee' and p.UserID != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized to view this payment")
-	return {"status": "success", "payment": {"PaymentID": p.PaymentID, "Amount": getattr(p, 'Amount', None), "UserID": getattr(p, 'UserID', None)}}
-
+	return {
+		"status": "success",
+		"payment": {
+			"PaymentID": p.PaymentID,
+			"Amount": p.Amount,
+			"Payment_date": p.Payment_date,
+			"Payment_method": p.Payment_method,
+			"UserID": p.UserID
+		}
+	}
 
 @router.get("/payments/user/{user_id}")
 def get_payments_by_user(user_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	"""Get a payment by user"""
 	if current_user.role == 'tutee' and user_id != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized to view other user's payments")
 	items = payment_service.get_payments_by_user(user_id)
-	return {"status": "success", "count": len(items), "payments": [{"PaymentID": i.PaymentID, "Amount": getattr(i, 'Amount', None)} for i in items]}
+	return {
+		"status": "success",
+		"count": len(items),
+		"payments": [{
+			"PaymentID": p.PaymentID,
+			"Amount": p.Amount,
+			"Payment_date": p.Payment_date,
+			"Payment_method": p.Payment_method,
+			"UserID": p.UserID
+		} for p in items]
+	}
 
 
 @router.get("/payments")
 def get_all_payments(limit: int = 100, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	"""Get all payment"""
 	if current_user.role == 'tutee':
 		raise HTTPException(status_code=403, detail="Not authorized, requires admin role")
 	items = payment_service.get_all_payments(limit=limit)
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"payments": [{
+			"PaymentID": p.PaymentID,
+			"Amount": p.Amount,
+			"Payment_date": p.Payment_date,
+			"Payment_method": p.Payment_method,
+			"UserID": p.UserID
+		} for p in items]
+	}
 
 
 @router.put("/payments/{payment_id}")
@@ -214,23 +269,41 @@ def create_certificate(data: Dict[str, Any] = Body(...), current_user: CurrentUs
 
 @router.get("/certificates/{certificate_id}")
 def get_certificate(certificate_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	"""Get certificates by certificate_id"""
 	c = certificate_service.get_certificate_by_id(certificate_id)
 	if not c:
 		raise HTTPException(status_code=404, detail="Certificate not found")
-	# students can view their own certificates
-	if current_user.role == 'tutee' and getattr(c, 'StudentID', None) != current_user.user_id:
+	if current_user.role == 'tutee' and c.StudentID != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized to view this certificate")
-	return {"status": "success", "certificate": {"CertificateID": c.CertificateID, "CourseID": getattr(c, 'CourseID', None), "StudentID": getattr(c, 'StudentID', None)}}
+	return {
+		"status": "success",
+		"certificate": {
+			"CertificateID": c.CertificateID,
+			"CourseID": c.CourseID,
+			"StudentID": c.StudentID,
+			"Expiry_date": c.Expiry_date,
+			"Issue_date": c.Issue_date,
+			"Certificate_number": c.Certificate_number
+		}
+	}
 
 
 @router.get("/certificates/student/{student_id}")
 def get_student_certificates(student_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	"""Get certificates for a student"""
 	if current_user.role == 'tutee' and student_id != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized to view other student's certificates")
 	items = certificate_service.get_student_certificates(student_id)
-	return {"status": "success", "count": len(items)}
+	return {
+		"status": "success",
+		"count": len(items),
+		"certificates": [{
+			"CertificateID": c.CertificateID,
+			"CourseID": c.CourseID,
+			"StudentID": c.StudentID,
+			"Expiry_date": c.Expiry_date,
+			"Issue_date": c.Issue_date,
+			"Certificate_number": c.Certificate_number
+		} for c in items]
+	}
 
 
 @router.put("/certificates/{certificate_id}")
