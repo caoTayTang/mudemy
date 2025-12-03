@@ -1,13 +1,15 @@
-from sqlalchemy import Column, String, Integer, DateTime, Date, DECIMAL, Text as TextType, ForeignKey, Boolean, NVARCHAR
+from sqlalchemy import Column, String, Integer, DateTime, Date, DECIMAL, Text as TextType, ForeignKey, Boolean, NVARCHAR, FetchedValue
 from datetime import datetime
 from .base import Base
 
 
 class User(Base):
     __tablename__ = 'USER'
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = {
+        'extend_existing': True, 
+   }
     
-    UserID = Column(String(10), primary_key=True)
+    UserID = Column(String(10), primary_key=True, server_default=FetchedValue())
     User_name = Column(NVARCHAR(100), nullable=False, unique=True)
     Email = Column(NVARCHAR(100), nullable=False, unique=True)
     Password = Column(NVARCHAR(255), nullable=False)

@@ -1,9 +1,9 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from datetime import datetime, date
-from app.models import User, Course, Module, Payment, Enrollment, mudemy_session
+from app.models import *
 from app.services import UserService, CourseService, EnrollmentService
-
+from sqlalchemy import func
 import warnings
 warnings.filterwarnings('ignore', message='.*Unrecognized server version info.*')
 
@@ -154,13 +154,14 @@ def seed_additional_data():
         print(f"\n   ✗ Error: {e}")
 
 
-if __name__ == "__main__":    
+def get_user():
     try:
         # Test existing data
         #test_queries()
         users = user_service.get_all_users()
         for user in users:
-            print(user.User_name, user.Password)
+            if True:
+                print(user.User_name, user.Password, user.UserID)
         # Optionally seed additional data
         # Uncomment the line below to add test data
         # seed_additional_data()
@@ -169,3 +170,10 @@ if __name__ == "__main__":
         print(f"\n✗ Fatal Error: {e}")
         import traceback
         traceback.print_exc()
+
+if __name__ == "__main__":    
+    get_user()
+    new_id = generate_id(mudemy_session, Content.ContentID)
+
+    print(new_id)
+
