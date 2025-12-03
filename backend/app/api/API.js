@@ -16,12 +16,12 @@ const API_DOCS = [
     method: "POST",
     path: "/api/auth/login",
     input: {
-      "username": "Đạt Phạm",
-      "password": "P@ssw0rd123!",
+      "User_name": "Đạt Phạm",
+      "Password": "P@ssw0rd123!",
       "role": "tutor"
     },
     output: {
-      username: "Đạt Phạm",
+      User_name: "Đạt Phạm",
       role: "tutor",
       status: "Login successful",
     },
