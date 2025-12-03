@@ -16,12 +16,12 @@ const API_DOCS = [
     method: "POST",
     path: "/api/auth/login",
     input: {
-      "username": "dat.pham@mudemy.edu.vn",
+      "username": "Đạt Phạm",
       "password": "P@ssw0rd123!",
       "role": "tutor",
     },
     output: {
-      username: "dat.pham@mudemy.edu.vn",
+      username: "Đạt Phạm",
       role: "tutor",
       status: "Login successful",
     },
