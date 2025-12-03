@@ -26,6 +26,7 @@ def login(
     password = data.get("password")
     role = data.get("role")
     
+
     user = user_service.get_user_by_username(username)
     if not username: 
         raise HTTPException(
