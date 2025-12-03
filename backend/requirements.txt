@@ -1,1 +1,6 @@
 sqlalchemy
+fastapi
+uvicorn[standard]
+pyodbc
+python-jose
+loguru

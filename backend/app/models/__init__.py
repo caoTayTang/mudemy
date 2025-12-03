@@ -4,7 +4,8 @@ from .base import Base
 from .models import *
 
 
-SERVER_NAME = 'DESKTOP-IM92AEE\\SQLEXPRESS' 
+# SERVER_NAME = 'DESKTOP-IM92AEE\\SQLEXPRESS' 
+SERVER_NAME = r'localhost\SQLEXPRESS'
 DATABASE_NAME = 'MUDemy'
 CONNECTION_STRING = f'mssql+pyodbc://@{SERVER_NAME}/{DATABASE_NAME}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
 # USERNAME = "student123"

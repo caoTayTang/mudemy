@@ -8,12 +8,16 @@ import warnings
 warnings.filterwarnings('ignore', message='.*Unrecognized server version info.*')
 
 # Database configuration
-SERVER_NAME = 'DESKTOP-IM92AEE\\SQLEXPRESS' 
+# SERVER_NAME = 'DESKTOP-IM92AEE\\SQLEXPRESS' 
+
+# SERVER_NAME = r'Admin-PC\SQLEXPRESS'
+SERVER_NAME = r'localhost\SQLEXPRESS'
+# SERVER_NAME = r'ADMIN-PC\SQLEXPRESS'
 DATABASE_NAME = 'MUDemy'
 CONNECTION_STRING = f'mssql+pyodbc://@{SERVER_NAME}/{DATABASE_NAME}?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes'
 
-# engine = create_engine(CONNECTION_STRING, echo=True)
-# mudemy_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_engine(CONNECTION_STRING, echo=True)
+mudemy_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Initialize services
 user_service = UserService(mudemy_session)
@@ -25,7 +29,7 @@ def test_queries():
     # Test 1: Get user by username (from your INSERT_DATA.sql)
     print("1. Testing get_by_username...")
     user = user_service.get_by_username("Thuận Lương")  # First user from your SQL
-    if user:
+    if user: 
         print(f"Found user: {user.SFlag} ({user.Password})")
     else:
         print("User not found")
