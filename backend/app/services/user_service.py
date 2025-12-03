@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from ..models.models import User, Take, Interests, Instruct, Qualification
-
+from ..models import generate_id
 
 class UserService:
     """Service for User CRUD operations"""
@@ -13,6 +13,8 @@ class UserService:
     
     def create_user(self, user_data: Dict[str, Any]) -> User:
         """Create a new user"""
+        new_id = generate_id(self.db_session, User.UserID)
+        user_data["UserID"] = new_id
         with self.db_session() as session:
             try:
                 user = User(**user_data)

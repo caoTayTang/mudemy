@@ -6,7 +6,7 @@ from ..models.models import (
     Course, Module, Requires, Content, LessonRef, 
     Text, Video, Image, Category
 )
-
+from ..models import generate_id
 
 class CourseService:
     """Service for Course CRUD operations"""
@@ -16,6 +16,8 @@ class CourseService:
     
     def create_course(self, course_data: Dict[str, Any]) -> Course:
         """Create a new course"""
+        new_id = generate_id(self.db_session, Course.CourseID)
+        course_data["CourseID"] = new_id
         with self.db_session() as session:
             try:
                 course = Course(**course_data)
