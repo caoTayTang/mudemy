@@ -18,7 +18,7 @@ const API_DOCS = [
     input: {
       "username": "Đạt Phạm",
       "password": "P@ssw0rd123!",
-      "role": "tutor",
+      "role": "tutor"
     },
     output: {
       username: "Đạt Phạm",
