@@ -11,23 +11,31 @@ from ..models import generate_id
 class CourseService:
     """Service for Course CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries=50):
         self.db_session = db_session
-    
+        self.max_retries = max_retries
+
     def create_course(self, course_data: Dict[str, Any]) -> Course:
         """Create a new course"""
-        new_id = generate_id(self.db_session, Course.CourseID)
-        course_data["CourseID"] = new_id
-        with self.db_session() as session:
-            try:
-                course = Course(**course_data)
-                session.add(course)
-                session.commit()
-                session.refresh(course)
-                return course
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating course: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Course.CourseID)
+            course_data["CourseID"] = new_id
+            with self.db_session() as session:
+                try:
+                    course = Course(**course_data)
+                    session.add(course)
+                    session.commit()
+                    session.refresh(course)
+                    print(f"Successfully created {new_id} on attempt {attempt + 1}")
+                    return course
+                except IntegrityError:
+                    session.rollback()
+                    print(f"Collision detected for {new_id}. Retrying...")
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise e
+        raise Exception(f"Failed to generate unique ID for {Course.__name__} after {self.max_retries} attempts.")
     
     def get_course_by_id(self, course_id: str) -> Optional[Course]:
         """Get course by ID"""
@@ -79,21 +87,30 @@ class CourseService:
 class ModuleService:
     """Service for Module CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries: int = 50):
         self.db_session = db_session
+        self.max_retries = max_retries
     
     def create_module(self, module_data: Dict[str, Any]) -> Module:
         """Create a new module"""
-        with self.db_session() as session:
-            try:
-                module = Module(**module_data)
-                session.add(module)
-                session.commit()
-                session.refresh(module)
-                return module
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating module: {str(e)}")
+        # Generate ModuleID with retry in case of collisions
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Module.ModuleID)
+            module_data["ModuleID"] = new_id
+            with self.db_session() as session:
+                try:
+                    module = Module(**module_data)
+                    session.add(module)
+                    session.commit()
+                    session.refresh(module)
+                    return module
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating module: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {Module.__name__} after {self.max_retries} attempts.")
     
     def get_module_by_id(self, module_id: str) -> Optional[Module]:
         """Get module by ID"""
@@ -183,16 +200,25 @@ class ContentService:
     
     def create_content(self, content_data: Dict[str, Any]) -> Content:
         """Create new content"""
-        with self.db_session() as session:
-            try:
-                content = Content(**content_data)
-                session.add(content)
-                session.commit()
-                session.refresh(content)
-                return content
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating content: {str(e)}")
+        # ContentID is generated (LESSON_REF handled elsewhere/trigger)
+        max_retries = getattr(self, 'max_retries', 50)
+        for attempt in range(max_retries):
+            new_id = generate_id(self.db_session, Content.ContentID)
+            content_data["ContentID"] = new_id
+            with self.db_session() as session:
+                try:
+                    content = Content(**content_data)
+                    session.add(content)
+                    session.commit()
+                    session.refresh(content)
+                    return content
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating content: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {Content.__name__} after {max_retries} attempts.")
     
     def get_content_by_id(self, content_id: str) -> Optional[Content]:
         """Get content by ID"""
@@ -275,16 +301,24 @@ class TextService:
     
     def create_text(self, text_data: Dict[str, Any]) -> Text:
         """Create new text content"""
-        with self.db_session() as session:
-            try:
-                text = Text(**text_data)
-                session.add(text)
-                session.commit()
-                session.refresh(text)
-                return text
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating text: {str(e)}")
+        max_retries = getattr(self, 'max_retries', 50)
+        for attempt in range(max_retries):
+            new_id = generate_id(self.db_session, Text.TextID)
+            text_data["TextID"] = new_id
+            with self.db_session() as session:
+                try:
+                    text = Text(**text_data)
+                    session.add(text)
+                    session.commit()
+                    session.refresh(text)
+                    return text
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating text: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {Text.__name__} after {max_retries} attempts.")
     
     def get_text_by_content_id(self, content_id: str) -> Optional[Text]:
         """Get text by content ID"""
@@ -334,16 +368,24 @@ class VideoService:
     
     def create_video(self, video_data: Dict[str, Any]) -> Video:
         """Create new video content"""
-        with self.db_session() as session:
-            try:
-                video = Video(**video_data)
-                session.add(video)
-                session.commit()
-                session.refresh(video)
-                return video
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating video: {str(e)}")
+        max_retries = getattr(self, 'max_retries', 50)
+        for attempt in range(max_retries):
+            new_id = generate_id(self.db_session, Video.VideoID)
+            video_data["VideoID"] = new_id
+            with self.db_session() as session:
+                try:
+                    video = Video(**video_data)
+                    session.add(video)
+                    session.commit()
+                    session.refresh(video)
+                    return video
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating video: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {Video.__name__} after {max_retries} attempts.")
     
     def get_video_by_content_id(self, content_id: str) -> Optional[Video]:
         """Get video by content ID"""
@@ -393,16 +435,24 @@ class ImageService:
     
     def create_image(self, image_data: Dict[str, Any]) -> Image:
         """Create new image content"""
-        with self.db_session() as session:
-            try:
-                image = Image(**image_data)
-                session.add(image)
-                session.commit()
-                session.refresh(image)
-                return image
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating image: {str(e)}")
+        max_retries = getattr(self, 'max_retries', 50)
+        for attempt in range(max_retries):
+            new_id = generate_id(self.db_session, Image.ImageID)
+            image_data["ImageID"] = new_id
+            with self.db_session() as session:
+                try:
+                    image = Image(**image_data)
+                    session.add(image)
+                    session.commit()
+                    session.refresh(image)
+                    return image
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating image: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {Image.__name__} after {max_retries} attempts.")
     
     def get_image_by_content_id(self, content_id: str) -> Optional[Image]:
         """Get image by content ID"""

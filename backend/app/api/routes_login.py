@@ -64,7 +64,7 @@ def login(
         secure=True,    
         samesite="lax"  
     )
-    
+    user_service.update_last_login(user.UserID)
     return {"username": username, "role": role, "status": "Login successful"}
 
 @router.post("/logout")

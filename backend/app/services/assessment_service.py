@@ -7,26 +7,35 @@ from ..models.models import (
     Assignment, Quiz, Question, Answer,
     AssignSubmission, QuizSubmission
 )
+from ..models import generate_id
 
 
 class AssignmentService:
     """Service for Assignment CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries: int = 50):
         self.db_session = db_session
+        self.max_retries = max_retries
     
     def create_assignment(self, assignment_data: Dict[str, Any]) -> Assignment:
         """Create a new assignment"""
-        with self.db_session() as session:
-            try:
-                assignment = Assignment(**assignment_data)
-                session.add(assignment)
-                session.commit()
-                session.refresh(assignment)
-                return assignment
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating assignment: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Assignment.AssID)
+            assignment_data["AssID"] = new_id
+            with self.db_session() as session:
+                try:
+                    assignment = Assignment(**assignment_data)
+                    session.add(assignment)
+                    session.commit()
+                    session.refresh(assignment)
+                    return assignment
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating assignment: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {Assignment.__name__} after {self.max_retries} attempts.")
     
     def get_assignment_by_id(self, ass_id: str) -> Optional[Assignment]:
         """Get assignment by ID"""
@@ -89,21 +98,29 @@ class AssignmentService:
 class QuizService:
     """Service for Quiz CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries: int = 50):
         self.db_session = db_session
+        self.max_retries = max_retries
     
     def create_quiz(self, quiz_data: Dict[str, Any]) -> Quiz:
         """Create a new quiz"""
-        with self.db_session() as session:
-            try:
-                quiz = Quiz(**quiz_data)
-                session.add(quiz)
-                session.commit()
-                session.refresh(quiz)
-                return quiz
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating quiz: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Quiz.QuizID)
+            quiz_data["QuizID"] = new_id
+            with self.db_session() as session:
+                try:
+                    quiz = Quiz(**quiz_data)
+                    session.add(quiz)
+                    session.commit()
+                    session.refresh(quiz)
+                    return quiz
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating quiz: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {Quiz.__name__} after {self.max_retries} attempts.")
     
     def get_quiz_by_id(self, quiz_id: str) -> Optional[Quiz]:
         """Get quiz by ID"""
@@ -166,21 +183,29 @@ class QuizService:
 class QuestionService:
     """Service for Question CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries: int = 50):
         self.db_session = db_session
+        self.max_retries = max_retries
     
     def create_question(self, question_data: Dict[str, Any]) -> Question:
         """Create a new question"""
-        with self.db_session() as session:
-            try:
-                question = Question(**question_data)
-                session.add(question)
-                session.commit()
-                session.refresh(question)
-                return question
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating question: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Question.QuestionID)
+            question_data["QuestionID"] = new_id
+            with self.db_session() as session:
+                try:
+                    question = Question(**question_data)
+                    session.add(question)
+                    session.commit()
+                    session.refresh(question)
+                    return question
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating question: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {Question.__name__} after {self.max_retries} attempts.")
     
     def get_question_by_id(self, question_id: str) -> Optional[Question]:
         """Get question by ID"""
@@ -227,21 +252,29 @@ class QuestionService:
 class AnswerService:
     """Service for Answer CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries: int = 50):
         self.db_session = db_session
+        self.max_retries = max_retries
     
     def create_answer(self, answer_data: Dict[str, Any]) -> Answer:
         """Create a new answer option"""
-        with self.db_session() as session:
-            try:
-                answer = Answer(**answer_data)
-                session.add(answer)
-                session.commit()
-                session.refresh(answer)
-                return answer
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating answer: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Answer.AnswerID)
+            answer_data["AnswerID"] = new_id
+            with self.db_session() as session:
+                try:
+                    answer = Answer(**answer_data)
+                    session.add(answer)
+                    session.commit()
+                    session.refresh(answer)
+                    return answer
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating answer: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {Answer.__name__} after {self.max_retries} attempts.")
     
     def get_answer_by_id(self, question_id: str, quiz_id: str, answer_id: str) -> Optional[Answer]:
         """Get answer by composite key"""
@@ -318,21 +351,29 @@ class AnswerService:
 class AssignSubmissionService:
     """Service for Assignment Submission CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries: int = 50):
         self.db_session = db_session
+        self.max_retries = max_retries
     
     def create_submission(self, submission_data: Dict[str, Any]) -> AssignSubmission:
         """Create a new assignment submission"""
-        with self.db_session() as session:
-            try:
-                submission = AssignSubmission(**submission_data)
-                session.add(submission)
-                session.commit()
-                session.refresh(submission)
-                return submission
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating submission: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, AssignSubmission.SubID)
+            submission_data["SubID"] = new_id
+            with self.db_session() as session:
+                try:
+                    submission = AssignSubmission(**submission_data)
+                    session.add(submission)
+                    session.commit()
+                    session.refresh(submission)
+                    return submission
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating submission: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {AssignSubmission.__name__} after {self.max_retries} attempts.")
     
     def get_submission_by_id(self, sub_id: str) -> Optional[AssignSubmission]:
         """Get submission by ID"""
@@ -415,21 +456,29 @@ class AssignSubmissionService:
 class QuizSubmissionService:
     """Service for Quiz Submission CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries: int = 50):
         self.db_session = db_session
+        self.max_retries = max_retries
     
     def create_submission(self, submission_data: Dict[str, Any]) -> QuizSubmission:
         """Create a new quiz submission"""
-        with self.db_session() as session:
-            try:
-                submission = QuizSubmission(**submission_data)
-                session.add(submission)
-                session.commit()
-                session.refresh(submission)
-                return submission
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating quiz submission: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, QuizSubmission.SubID)
+            submission_data["SubID"] = new_id
+            with self.db_session() as session:
+                try:
+                    submission = QuizSubmission(**submission_data)
+                    session.add(submission)
+                    session.commit()
+                    session.refresh(submission)
+                    return submission
+                except IntegrityError:
+                    session.rollback()
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise ValueError(f"Error creating quiz submission: {str(e)}")
+        raise Exception(f"Failed to generate unique ID for {QuizSubmission.__name__} after {self.max_retries} attempts.")
     
     def get_submission_by_id(self, sub_id: str) -> Optional[QuizSubmission]:
         """Get submission by ID"""

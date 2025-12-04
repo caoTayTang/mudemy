@@ -60,6 +60,8 @@ htmlcov/
 config.local.py
 settings.secret.json
 
+test.py
+
 *.db
 *.sqlite3
 

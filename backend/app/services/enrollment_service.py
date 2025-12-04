@@ -4,26 +4,35 @@ from sqlalchemy import func
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from ..models.models import Enrollment, Payment, Certificate
-
+from ..models import generate_id
 
 class EnrollmentService:
     """Service for Enrollment CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries=50):
         self.db_session = db_session
-    
+        self.max_retries = max_retries
+
     def create_enrollment(self, enrollment_data: Dict[str, Any]) -> Enrollment:
         """Create a new enrollment"""
-        with self.db_session() as session:
-            try:
-                enrollment = Enrollment(**enrollment_data)
-                session.add(enrollment)
-                session.commit()
-                session.refresh(enrollment)
-                return enrollment
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating enrollment: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Enrollment.EnrollmentID)
+            enrollment_data["EnrollmentID"] = new_id
+            with self.db_session() as session:
+                try:
+                    enrollment = Enrollment(**enrollment_data)
+                    session.add(enrollment)
+                    session.commit()
+                    session.refresh(enrollment)
+                    return enrollment
+                except IntegrityError:
+                    session.rollback()
+                    print(f"Collision detected for {new_id}. Retrying...")
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise e
+        raise Exception(f"Failed to generate unique ID for {Enrollment.__name__} after {self.max_retries} attempts.")
     
     def get_enrollment_by_id(self, enrollment_id: str) -> Optional[Enrollment]:
         """Get enrollment by ID"""
@@ -164,21 +173,31 @@ class EnrollmentService:
 class PaymentService:
     """Service for Payment CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries=50):
         self.db_session = db_session
-    
+        self.max_retries = max_retries
+
     def create_payment(self, payment_data: Dict[str, Any]) -> Payment:
         """Create a new payment"""
-        with self.db_session() as session:
-            try:
-                payment = Payment(**payment_data)
-                session.add(payment)
-                session.commit()
-                session.refresh(payment)
-                return payment
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating payment: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Payment.PaymentID)
+            payment_data["PaymentID"] = new_id
+            with self.db_session() as session:
+                try:
+                    payment = Payment(**payment_data)
+                    session.add(payment)
+                    session.commit()
+                    session.refresh(payment)
+                    return payment
+                except IntegrityError:
+                    session.rollback()
+                    print(f"Collision detected for {new_id}. Retrying...")
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise e
+        raise Exception(f"Failed to generate unique ID for {Payment.__name__} after {self.max_retries} attempts.")
+                
     
     def get_payment_by_id(self, payment_id: str) -> Optional[Payment]:
         """Get payment by ID"""
@@ -280,21 +299,30 @@ class PaymentService:
 class CertificateService:
     """Service for Certificate CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries=50):
         self.db_session = db_session
-    
+        self.max_retries = max_retries
+        
     def create_certificate(self, certificate_data: Dict[str, Any]) -> Certificate:
         """Create a new certificate"""
-        with self.db_session() as session:
-            try:
-                certificate = Certificate(**certificate_data)
-                session.add(certificate)
-                session.commit()
-                session.refresh(certificate)
-                return certificate
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating certificate: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Certificate.CertificateID)
+            certificate_data["CertificateID"] = new_id
+            with self.db_session() as session:
+                try:
+                    cer = Certificate(**certificate_data)
+                    session.add(cer)
+                    session.commit()
+                    session.refresh(cer)
+                    return cer
+                except IntegrityError:
+                    session.rollback()
+                    print(f"Collision detected for {new_id}. Retrying...")
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise e
+        raise Exception(f"Failed to generate unique ID for {Certificate.__name__} after {self.max_retries} attempts.")
     
     def get_certificate_by_id(self, certificate_id: str) -> Optional[Certificate]:
         """Get certificate by ID"""

@@ -8,23 +8,31 @@ from ..models import generate_id
 class UserService:
     """Service for User CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker,max_retries=50):
         self.db_session = db_session
-    
+        self.max_retries = max_retries
+
     def create_user(self, user_data: Dict[str, Any]) -> User:
         """Create a new user"""
-        new_id = generate_id(self.db_session, User.UserID)
-        user_data["UserID"] = new_id
-        with self.db_session() as session:
-            try:
-                user = User(**user_data)
-                session.add(user)
-                session.commit()
-                session.refresh(user)
-                return user
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating user: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, User.UserID)
+            user_data["UserID"] = new_id
+            with self.db_session() as session:
+                try:
+                    user = User(**user_data)
+                    session.add(user)
+                    session.commit()
+                    session.refresh(user)
+                    print(f"Successfully created {new_id} on attempt {attempt + 1}")
+                    return user
+                except IntegrityError:
+                    session.rollback()
+                    print(f"Collision detected for {new_id}. Retrying...")
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise e
+        raise Exception(f"Failed to generate unique ID for {User.__name__} after {self.max_retries} attempts.")
     
     def get_user_by_id(self, user_id: str) -> Optional[User]:
         """Get user by ID"""

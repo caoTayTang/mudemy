@@ -2,26 +2,35 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional, Dict, Any
 from ..models.models import Resource, ProvideResource
-
+from ..models import generate_id
 
 class ResourceService:
     """Service for Resource CRUD operations"""
     
-    def __init__(self, db_session: sessionmaker):
+    def __init__(self, db_session: sessionmaker, max_retries=50):
         self.db_session = db_session
-    
+        self.max_retries = max_retries
+
     def create_resource(self, resource_data: Dict[str, Any]) -> Resource:
         """Create a new resource"""
-        with self.db_session() as session:
-            try:
-                resource = Resource(**resource_data)
-                session.add(resource)
-                session.commit()
-                session.refresh(resource)
-                return resource
-            except IntegrityError as e:
-                session.rollback()
-                raise ValueError(f"Error creating resource: {str(e)}")
+        for attempt in range(self.max_retries):
+            new_id = generate_id(self.db_session, Resource.ResourceID)
+            resource_data["ResourceID"] = new_id
+            with self.db_session() as session:
+                try:
+                    res = Resource(**resource_data)
+                    session.add(res)
+                    session.commit()
+                    session.refresh(res)
+                    return res
+                except IntegrityError:
+                    session.rollback()
+                    print(f"Collision detected for {new_id}. Retrying...")
+                    continue
+                except Exception as e:
+                    session.rollback()
+                    raise e
+        raise Exception(f"Failed to generate unique ID for {Resource.__name__} after {self.max_retries} attempts.")
     
     def get_resource_by_id(self, resource_id: str) -> Optional[Resource]:
         """Get resource by ID"""
