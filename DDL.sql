@@ -38,6 +38,7 @@ CREATE TABLE [USER] (
     IFlag BIT,
     Bio_text NVARCHAR(MAX),
     Year_of_experience INT CHECK (Year_of_experience >= 0),
+    Average_rating DECIMAL(2,1) DEFAULT NULL CHECK (Average_rating >= 0 AND Average_rating <= 5),
     SFlag BIT,
     Total_enrollments INT DEFAULT 0 CHECK (Total_enrollments >= 0),
 

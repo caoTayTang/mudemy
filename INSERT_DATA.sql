@@ -6,26 +6,22 @@ GO
 SET DATEFORMAT ymd;
 GO
 
--- VÔ HIỆU HÓA TRIGGERS - CHÈN ID THỦ CÔNG
-DISABLE TRIGGER trg_user_id_auto_increment ON [USER];
-DISABLE TRIGGER trg_course_id_auto_increment ON COURSE;
-GO
 
 -- 1. USER: 13 rows
-INSERT INTO [USER] (UserID, User_name, Email, [Password], Full_name, City, Country, Phone, Date_of_birth, Last_login, IFlag, Bio_text, Year_of_experience, SFlag, Total_enrollments) VALUES
-('USR00001', N'Đạt Phạm',    'dat.pham@mudemy.edu.vn',     'P@ssw0rd123!', N'Phạm Lê Tiến Đạt',        N'TP. Hồ Chí Minh', N'Việt Nam', '0903123456', '1986-06-15', '2025-11-23 19:30:00', 1, N'Giảng viên MUdemy', 15, 0, 0), 
-('USR00002', N'Thịnh Võ',     'thinh.vo@mudemy.edu.vn',       'v@ssw0rd312!', N'Võ Văn Thịnh',      N'TP. Hồ Chí Minh', N'Việt Nam', '0904123457', '1985-03-20', '2025-11-23 19:29:01', 1, N'Giảng viên MUdemy', 14, 0, 0), 
-('USR00003', N'Thuận Lương',     'thuan.luong@mudemy.edu.vn',     'b@ssw0rd231!', N'Lương Minh Thuận',  N'TP. Hồ Chí Minh', N'Việt Nam', '0905123458', '1987-09-10', '2025-11-23 16:30:00', 1, N'Giảng viên MUdemy', 12, 0, 0), 
-('USR00004', N'Huy Nguyễn',     'huy.nguyen@mudemy.edu.vn',        'h@ckd00r555!', N'Nguyễn Quốc Huy',       N'TP. Hồ Chí Minh', N'Việt Nam', '0906123459', '1988-11-05', '2025-11-23 20:05:36', 1, N'Giảng viên MUdemy', 13, 0, 0), 
-('USR00005', N'Đại Lê',     'dai.lechi@mudemy.edu.vn',        'b@ckd00rsiu!', N'Lê Chí Đại',       N'TP. Hồ Chí Minh', N'Việt Nam', '0906123459', '1988-11-05', '2025-11-23 23:05:25', 1, N'Giảng viên MUdemy', 13, 0, 0), 
-('USR00006', N'Tuấn BK',       'anhtuan@hcmut.edu.vn','t@ssw0r123!', N'Nguyễn Anh Tuấn',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938111222', '2005-04-12', '2025-11-23 15:06:03', 0, N'SV Bách Khoa TP.HCM', NULL, 1, 1), 
-('USR00007', N'Linh Cute',     'ngoclinh@fpt.edu.vn',         'y@ssh0rd102!', N'Trần Ngọc Linh',           N'TP. Hồ Chí Minh', N'Việt Nam', '0938222333', '2006-08-25', '2025-11-22 07:03:05', 0, N'SV Đại Học FPT', NULL, 1, 1), 
-('USR00008', N'Thọ Fan MU',        'ductho@gmail.com',            'tho#w0rd123!', N'Lê Đức Thọ',               N'TP. Hồ Chí Minh', N'Việt Nam', '0938333444', '2005-12-30', '2025-11-22 08:03:24', 0, N'SV KHTN TP.HCM', NULL, 1, 1), 
-('USR00009', N'Trang Kute',     'thuytrang98@gmail.com',       'trangp@ssw0rd22!', N'Phạm Thúy Trang',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938444555', '2007-05-18', '2025-11-22 07:03:05', 0, N'SV UEH', NULL, 1, 1), 
-('USR00010', N'baokhanh', 'baokhanh@gmail.com',        'h%w0rd345!', N'Vũ Bảo Khanh',             N'TP. Hồ Chí Minh', N'Việt Nam', '0938555666', '2004-02-14', '2025-11-22 13:03:05', 0, N'SV FTU', NULL, 1, 1), 
-('USR00011', N'vinhpro', 'vinhnguyen@gmail.com',       'P@ssw0rd123!', N'Nguyễn Hữu Vinh',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938666777', '2000-10-10', '2025-11-21 07:03:05', 0, N'SV UEH', NULL, 1, 1), 
-('USR00012', N'LAnh',        'lananh@gmail.com',            't@ssw0rh788!', N'Đỗ Lan Anh',               N'TP. Hồ Chí Minh', N'Việt Nam', '0938777888', '2004-07-19', '2025-11-23 08:03:05', 0, N'SV UFM', NULL, 1, 1), 
-('USR00013', N'Khoa Wibu',        'khoamu.nguyen@provn.vn',        'f@nM0rd666!', N'Nguyễn Đặng Khoa',         N'TP. Hồ Chí Minh', N'Việt Nam', '0938888999', '2005-01-01', '2025-11-22 07:04:07', 0, N'Fan MU', NULL, 1, 1);
+INSERT INTO [USER] (UserID, User_name, Email, [Password], Full_name, City, Country, Phone, Date_of_birth, Last_login, IFlag, Bio_text, Year_of_experience, Average_rating, SFlag, Total_enrollments) VALUES
+('USR00001', N'Đạt Phạm',    'dat.pham@mudemy.edu.vn',     'P@ssw0rd123!', N'Phạm Lê Tiến Đạt',        N'TP. Hồ Chí Minh', N'Việt Nam', '0903123456', '1986-06-15', '2025-11-23 19:30:00', 1, N'Giảng viên MUdemy', 15, 1, 0, 0), 
+('USR00002', N'Thịnh Võ',     'thinh.vo@mudemy.edu.vn',       'v@ssw0rD312!', N'Võ Văn Thịnh',      N'TP. Hồ Chí Minh', N'Việt Nam', '0904123457', '1985-03-20', '2025-11-23 19:29:01', 1, N'Giảng viên MUdemy', 14, 2.3, 0, 0), 
+('USR00003', N'Thuận Lương',     'thuan.luong@mudemy.edu.vn',     'b@ssW0rd231!', N'Lương Minh Thuận',  N'TP. Hồ Chí Minh', N'Việt Nam', '0905123458', '1987-09-10', '2025-11-23 16:30:00', 1, N'Giảng viên MUdemy', 12, 3.0, 0, 0), 
+('USR00004', N'Huy Nguyễn',     'huy.nguyen@mudemy.edu.vn',        'h@cKd00r555!', N'Nguyễn Quốc Huy',       N'TP. Hồ Chí Minh', N'Việt Nam', '0906123459', '1988-11-05', '2025-11-23 20:05:36', 1, N'Giảng viên MUdemy', 13, 4.0, 0, 0), 
+('USR00005', N'Đại Lê',     'dai.lechi@mudemy.edu.vn',        'b@ckd00rSiu!', N'Lê Chí Đại',       N'TP. Hồ Chí Minh', N'Việt Nam', '0906123459', '1988-11-05', '2025-11-23 23:05:25', 1, N'Giảng viên MUdemy', 13, 3.5, 0, 0), 
+('USR00006', N'Tuấn BK',       'anhtuan@hcmut.edu.vn','t@ssw0R123!', N'Nguyễn Anh Tuấn',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938111222', '2005-04-12', '2025-11-23 15:06:03', 0, N'SV Bách Khoa TP.HCM', NULL, 2.4, 1, 1), 
+('USR00007', N'Linh Cute',     'ngoclinh@fpt.edu.vn',         'Y@ssh0rd102!', N'Trần Ngọc Linh',           N'TP. Hồ Chí Minh', N'Việt Nam', '0938222333', '2006-08-25', '2025-11-22 07:03:05', 0, N'SV Đại Học FPT', NULL, 2.0, 1, 1), 
+('USR00008', N'Thọ Fan MU',        'ductho@gmail.com',            'Tho#w0rd123!', N'Lê Đức Thọ',               N'TP. Hồ Chí Minh', N'Việt Nam', '0938333444', '2005-12-30', '2025-11-22 08:03:24', 0, N'SV KHTN TP.HCM', NULL, 2.0, 1, 1), 
+('USR00009', N'Trang Kute',     'thuytrang98@gmail.com',       'traNgp@ssw0rd22!', N'Phạm Thúy Trang',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938444555', '2007-05-18', '2025-11-22 07:03:05', 0, N'SV UEH', NULL, NULL, 1, 1), 
+('USR00010', N'baokhanh', 'baokhanh@gmail.com',        'h%w0Rd345!', N'Vũ Bảo Khanh',             N'TP. Hồ Chí Minh', N'Việt Nam', '0938555666', '2004-02-14', '2025-11-22 13:03:05', 0, N'SV FTU', NULL, NULL, 1, 1), 
+('USR00011', N'vinhpro', 'vinhnguyen@gmail.com',       'P@SSw0rd123!', N'Nguyễn Hữu Vinh',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938666777', '2000-10-10', '2025-11-21 07:03:05', 0, N'SV UEH', NULL, 1.0, 1, 1), 
+('USR00012', N'LAnh',        'lananh@gmail.com',            'T@ssw0rh788!', N'Đỗ Lan Anh',               N'TP. Hồ Chí Minh', N'Việt Nam', '0938777888', '2004-07-19', '2025-11-23 08:03:05', 0, N'SV UFM', NULL, 0.5, 1, 1), 
+('USR00013', N'Khoa Wibu',        'khoamu.nguyen@provn.vn',        'f@nM0rd666!', N'Nguyễn Đặng Khoa',         N'TP. Hồ Chí Minh', N'Việt Nam', '0938888999', '2005-01-01', '2025-11-22 07:04:07', 0, N'Fan MU', NULL, 3.4, 1, 1);
 GO
 
 -- 2. COURSE: 6 rows 
