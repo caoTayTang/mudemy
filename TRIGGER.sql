@@ -178,3 +178,132 @@ BEGIN
     END
 END;
 GO
+
+
+-- ================================================
+-- 6. Trigger cập nhật tiến độ học tập (Progress) khi TAKE thay đổi
+-- ================================================
+CREATE OR ALTER TRIGGER trg_update_progress_on_take
+ON TAKE
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    /*
+      Bước 1: Tìm tất cả các cặp (UserID, LessonID) bị ảnh hưởng
+      (bao gồm cả rows từ inserted và deleted)
+    */
+    ;WITH AffectedLessons AS (
+        SELECT DISTINCT UserID, LessonID
+        FROM (
+            SELECT UserID, LessonID FROM inserted
+            UNION ALL
+            SELECT UserID, LessonID FROM deleted
+        ) x
+    ),
+
+    /*
+      Bước 2: Map LessonID -> ModuleID (lesson có thể là Content, Quiz hoặc Assignment)
+      Lấy ModuleID từ từng bảng tương ứng (nếu tồn tại)
+    */
+    LessonModules AS (
+        SELECT al.UserID, al.LessonID,
+               COALESCE(c.ModuleID, q.ModuleID, a.ModuleID) AS ModuleID
+        FROM AffectedLessons al
+        LEFT JOIN CONTENT c ON c.ContentID = al.LessonID
+        LEFT JOIN QUIZ q      ON q.QuizID     = al.LessonID
+        LEFT JOIN ASSIGNMENT a ON a.AssID     = al.LessonID
+    ),
+
+    /*
+      Bước 3: Map ModuleID -> CourseID và lấy danh sách các cặp (UserID, CourseID) cần cập nhật
+    */
+    AffectedEnrollments AS (
+        SELECT DISTINCT lm.UserID, m.CourseID
+        FROM LessonModules lm
+        JOIN [MODULE] m ON m.ModuleID = lm.ModuleID
+        WHERE lm.ModuleID IS NOT NULL
+    )
+
+    /*
+      Bước 4: Cập nhật progress cho mỗi cặp (StudentID, CourseID) trong ENROLLMENT
+      - TotalLessons: số lesson (content+quiz+assignment) thuộc course
+      - FinishedLessons: số lesson đã is_finished = 1 của user thuộc course
+    */
+    UPDATE E
+    SET Progress = 
+        CASE 
+            WHEN calc.TotalLessons = 0 THEN CAST(0.0 AS DECIMAL(3,1))
+            ELSE CAST( ROUND( (CAST(calc.FinishedLessons AS FLOAT) * 100.0) / calc.TotalLessons, 1) AS DECIMAL(3,1) )
+        END
+    FROM ENROLLMENT E
+    INNER JOIN AffectedEnrollments AE
+        ON E.StudentID = AE.UserID
+       AND E.CourseID = AE.CourseID
+    CROSS APPLY
+    (
+        -- Tính TotalLessons và FinishedLessons cho AE.UserID / AE.CourseID
+        SELECT
+            -- Total lessons in the course (distinct lesson ids)
+            (
+                SELECT COUNT(*) FROM
+                (
+                    -- Content lessons
+                    SELECT c.ContentID AS LessonID
+                    FROM CONTENT c
+                    JOIN [MODULE] mm ON c.ModuleID = mm.ModuleID
+                    WHERE mm.CourseID = AE.CourseID
+
+                    UNION
+
+                    -- Quiz lessons
+                    SELECT q.QuizID AS LessonID
+                    FROM QUIZ q
+                    JOIN [MODULE] mm2 ON q.ModuleID = mm2.ModuleID
+                    WHERE mm2.CourseID = AE.CourseID
+
+                    UNION
+
+                    -- Assignment lessons
+                    SELECT a.AssID AS LessonID
+                    FROM ASSIGNMENT a
+                    JOIN [MODULE] mm3 ON a.ModuleID = mm3.ModuleID
+                    WHERE mm3.CourseID = AE.CourseID
+                ) AS AllLessons
+            ) AS TotalLessons,
+
+            -- Finished lessons for this student in this course
+            (
+                SELECT COUNT(*) FROM
+                (
+                    -- Finished content lessons
+                    SELECT t.LessonID
+                    FROM TAKE t
+                    JOIN CONTENT c2 ON c2.ContentID = t.LessonID
+                    JOIN [MODULE] mm4 ON c2.ModuleID = mm4.ModuleID
+                    WHERE t.UserID = AE.UserID AND t.is_finished = 1 AND mm4.CourseID = AE.CourseID
+
+                    UNION
+
+                    -- Finished quiz lessons
+                    SELECT t2.LessonID
+                    FROM TAKE t2
+                    JOIN QUIZ q2 ON q2.QuizID = t2.LessonID
+                    JOIN [MODULE] mm5 ON q2.ModuleID = mm5.ModuleID
+                    WHERE t2.UserID = AE.UserID AND t2.is_finished = 1 AND mm5.CourseID = AE.CourseID
+
+                    UNION
+
+                    -- Finished assignment lessons
+                    SELECT t3.LessonID
+                    FROM TAKE t3
+                    JOIN ASSIGNMENT a3 ON a3.AssID = t3.LessonID
+                    JOIN [MODULE] mm6 ON a3.ModuleID = mm6.ModuleID
+                    WHERE t3.UserID = AE.UserID AND t3.is_finished = 1 AND mm6.CourseID = AE.CourseID
+                ) AS DoneLessons
+            ) AS FinishedLessons
+    ) AS calc
+    ;
+END;
+GO
