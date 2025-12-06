@@ -4,14 +4,12 @@ import { useNavigate } from 'react-router-dom';
 
 const StudentDashboardPage = () => {
   const navigate = useNavigate();
-  const { user, courses, loading, activeTab, setActiveTab } = useStudentDashboardController();
+  const { user, courses, loading, activeTab, setActiveTab, actions } = useStudentDashboardController();
 
   if (loading) return <div className="min-h-screen bg-background-light dark:bg-background-dark p-10 text-center text-text-body-light dark:text-text-body-dark">Loading dashboard...</div>;
 
-  // Calculate Total Progress Stats
   const totalCourses = courses.length;
   const completedCourses = courses.filter(c => c.status === 'Completed' || c.progress === 100).length;
-  // Calculate a global percentage if needed, or just show counts
   const globalProgress = totalCourses > 0 ? Math.round((completedCourses / totalCourses) * 100) : 0;
 
   return (
@@ -26,7 +24,9 @@ const StudentDashboardPage = () => {
               <h2 className="text-[#1b0d0d] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">MUDemy</h2>
             </div>
           </div>
-          <div className="hidden md:flex flex-1 max-w-lg items-center">
+          
+          {/* SEARCH BAR - CENTERED */}
+          <div className="hidden md:flex flex-1 max-w-lg items-center justify-center mx-auto">
             <label className="flex flex-col w-full !h-10">
               <div className="flex w-full flex-1 items-stretch rounded-lg h-full">
                 <div className="text-[#9a4c4c] dark:text-gray-400 flex bg-primary/20 dark:bg-white/10 items-center justify-center pl-4 rounded-l-lg">
@@ -36,6 +36,7 @@ const StudentDashboardPage = () => {
               </div>
             </label>
           </div>
+
           <div className="flex flex-1 justify-end gap-4 sm:gap-6">
             <button className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 bg-primary/20 dark:bg-white/10 text-[#1b0d0d] dark:text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0">
               <span className="material-symbols-outlined">notifications</span>
@@ -55,7 +56,6 @@ const StudentDashboardPage = () => {
                 <div className="flex gap-3 items-center">
                   <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style={{ backgroundImage: `url("${user?.avatar}")` }}></div>
                   <div className="flex flex-col">
-                    {/* Adjusted to use User_name or Full_name based on API docs */}
                     <h1 className="text-[#1b0d0d] dark:text-white text-base font-medium leading-normal">{user?.User_name || user?.name}</h1>
                     <p className="text-[#9a4c4c] dark:text-gray-400 text-sm font-normal leading-normal">{user?.email}</p>
                   </div>
@@ -96,7 +96,6 @@ const StudentDashboardPage = () => {
             <div className="flex flex-wrap justify-between gap-3 mb-6">
               <div className="flex flex-col gap-2">
                 <p className="text-[#1b0d0d] dark:text-white text-3xl font-black leading-tight tracking-[-0.033em]">Welcome back, {user?.User_name || user?.name}!</p>
-                {/* Updated Subtitle to show Total Progress */}
                 <p className="text-[#9a4c4c] dark:text-gray-400 text-base font-normal leading-normal">
                   You have completed <span className="font-bold text-primary">{completedCourses}</span> out of <span className="font-bold">{totalCourses}</span> courses ({globalProgress}%).
                 </p>
@@ -127,7 +126,6 @@ const StudentDashboardPage = () => {
 
             {/* COURSES GRID */}
             <div className="grid grid-cols-1 gap-6">
-
               {courses.map(course => (
                 <div key={course.id} className="flex flex-col gap-4 rounded-xl bg-background-light dark:bg-background-dark p-4 shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2)] border border-primary/20 dark:border-primary/30">
                   <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
@@ -138,23 +136,27 @@ const StudentDashboardPage = () => {
                     <div className="flex-1 w-full">
                       <div className="flex justify-between items-start">
                         <div>
-                          <span className={`text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded-full ${course.status === 'Completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/50'}`}>
+                          <span className={`text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded-full`}>
                             {course.status}
                           </span>
                           <p className="text-[#1b0d0d] dark:text-white text-lg font-bold leading-tight mt-2">{course.title}</p>
                           <p className="text-[#9a4c4c] dark:text-gray-400 text-sm font-normal leading-normal">by {course.instructor}</p>
                         </div>
-                        <button className="hidden md:flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-medium leading-normal w-fit">
-                          <span>{course.status === 'Completed' ? 'Review Course' : 'Continue Learning'}</span>
-                        </button>
+                        
+                        {/* Desktop Buttons */}
+                        <div className="hidden md:flex flex-col gap-2">
+                          <button className="min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-medium leading-normal w-fit">
+                            <span>{course.status === 'Completed' ? 'Review Course' : 'Continue Learning'}</span>
+                          </button>
+                        </div>
                       </div>
-                      
-                      {/* REMOVED INDIVIDUAL PROGRESS BAR */}
-                      {/* The space is now cleaner, focusing on the title and status */}
-                      
                     </div>
                   </div>
-                  
+                  <div className="text-sm italic text-gray-500">
+                    <span>
+                      {course.description}
+                    </span>
+                  </div>
                   {/* LESSONS LIST */}
                   <div className="border-t border-primary/20 dark:border-primary/30 pt-4">
                     <h4 className="text-sm font-bold text-[#1b0d0d] dark:text-white mb-3">Lessons</h4>
@@ -175,10 +177,18 @@ const StudentDashboardPage = () => {
                     </ul>
                   </div>
                   
-                  {/* Mobile Button */}
-                  <button className="md:hidden flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-medium leading-normal w-full mt-2">
-                    <span>{course.status === 'Completed' ? 'Review Course' : 'Continue Learning'}</span>
-                  </button>
+                  {/* Mobile Buttons */}
+                  <div className="md:hidden flex flex-col gap-2 mt-2">
+                    <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-medium leading-normal w-full">
+                      <span>{course.status === 'Completed' ? 'Review Course' : 'Continue Learning'}</span>
+                    </button>
+                    <button 
+                      onClick={() => actions.handleCheckPrerequisites(course.courseId || course.id)}
+                      className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-transparent border border-primary/30 text-primary text-sm font-medium leading-normal w-full"
+                    >
+                      Check Requirements
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

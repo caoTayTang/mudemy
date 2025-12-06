@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { analyticsService } from '../services/analyticsService';
+import { authService } from '../services/authService'; // Import Auth Service
+import { useNavigate } from 'react-router-dom';
 
 export const useInstructorAnalyticsController = () => {
   const [loading, setLoading] = useState(true);
@@ -8,11 +10,15 @@ export const useInstructorAnalyticsController = () => {
     totalEnrollments: 0,
     averageRating: 0
   });
+
+  const [user, setUser] = useState(null); // NEW: Track Logged-in User
+
   
   // State for filters
   const [timeRange, setTimeRange] = useState('Last 12 months');
   const [activeTab, setActiveTab] = useState('Overview');
-
+  const navigate = useNavigate();
+  
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -32,8 +38,16 @@ export const useInstructorAnalyticsController = () => {
     setTimeRange(e.target.value);
   };
 
+  // NEW: Logout Action
+  const handleLogout = async () => {
+    await authService.logout();
+    setUser(null);
+    navigate('/');
+  };
+
   return {
     loading,
+    user,
     stats,
     filters: {
       timeRange,
@@ -41,7 +55,8 @@ export const useInstructorAnalyticsController = () => {
     },
     actions: {
       handleTimeRangeChange,
-      setActiveTab
+      setActiveTab,
+      handleLogout
     }
   };
 };

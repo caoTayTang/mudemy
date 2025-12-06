@@ -7,18 +7,55 @@ import CheckoutPage from './pages/CheckoutPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import InstructorCoursePage from './pages/InstructorCoursePage';
 import InstructorAnalyticsPage from './pages/InstructorAnalyticsPage'; // Import Analytics
+import { AuthProvider } from './context/AuthContext'; // Import Provider
+import ProtectedRoute from './components/ProtectedRoute'; // Import Protection Wrapper
+
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/course/:id" element={<CourseDetailPage />} />
-      <Route path="/checkout" element={<CheckoutPage />} />
-      <Route path="/dashboard" element={<StudentDashboardPage />} />
-      <Route path="/instructor/courses" element={<InstructorCoursePage />} />
-      <Route path="/instructor/analytics" element={<InstructorAnalyticsPage />} /> {/* Add Route */}
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/course/:id" element={<CourseDetailPage />} />
+
+        <Route 
+          path="/checkout" 
+          element={
+            <ProtectedRoute>
+              <CheckoutPage />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <StudentDashboardPage/>
+            </ProtectedRoute>
+          } 
+        />
+
+          <Route 
+            path="/instructor/courses" 
+            element={
+              <ProtectedRoute allowedRoles={['tutor']}>
+                <InstructorCoursePage />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/instructor" 
+            element={
+              <ProtectedRoute allowedRoles={['tutor']}>
+                <InstructorAnalyticsPage />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </AuthProvider>
   );
 }
 

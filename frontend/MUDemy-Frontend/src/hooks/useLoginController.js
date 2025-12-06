@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { authService } from '../services/authService';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Use Context
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const useLoginController = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth(); // Destructure login from context
+  
   const [authMode, setAuthMode] = useState('login'); 
 
   const [formData, setFormData] = useState({
     username: '',
     password: '',
     fullName: '',
-    role: 'tutee' // Default to 'tutee' to match API requirements
+    role: 'tutee' 
   });
 
   const [status, setStatus] = useState({
@@ -21,10 +24,7 @@ export const useLoginController = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (status.error) setStatus(prev => ({ ...prev, error: null }));
   };
 
@@ -39,31 +39,24 @@ export const useLoginController = () => {
 
     try {
       if (authMode === 'login') {
-        // Now passing the role correctly from form data
-        const data = await authService.login(formData.username, formData.password, formData.role);
+        // Use Global Login
+        await login(formData.username, formData.password, formData.role);
         
-        // Handle Token from your specific API response structure
-        // Assuming your backend might return token in headers or body
-        // Adjust if your API returns { status: "Login successful" } but sets cookie
-        const token = data.access_token || data.token; 
+        setStatus({ loading: false, error: null, success: true });
         
-        if (token) {
-          localStorage.setItem('token', token);
-        } else {
-          // If using cookies, we might just assume success
-          console.log("No token in body, assuming cookie set.");
-        }
-
-        // Redirect based on role
-        if (formData.role === 'tutor') {
+        // Redirect Logic
+        // 1. Check if redirected from a protected page (e.g. they tried to visit /dashboard)
+        const origin = location.state?.from?.pathname;
+        if (origin) {
+          navigate(origin);
+        } 
+        // 2. Else go to role-specific home
+        else if (formData.role === 'tutor') {
           navigate('/instructor/courses');
         } else {
           navigate('/');
         }
-        
-        setStatus({ loading: false, error: null, success: true });
       } else {
-        // Register Logic placeholder
         console.log("Registering:", formData);
         await new Promise(resolve => setTimeout(resolve, 1000));
         navigate('/'); 

@@ -17,19 +17,18 @@ const mapEnrollmentToFrontend = (enrollment, courseDetails, progressData = []) =
     courseId: enrollment.id, // Corrected to match backend DB column
     
     // 2. Hydrate Missing Data: Use details from the separate course fetch
-    title: courseDetails?.title || "Loading Course...",
-    instructor: courseDetails?.author || "MUDemy Instructor",
-    image: courseDetails?.image || "https://lh3.googleusercontent.com/aida-public/AB6AXuCJvR2L-V_bsDptQ-El7f4IB80ZyZ-SV3qbu6Nom0Ws7UhdYu9Lna_El1veVNYZYuBt9J3loaGHH7UBMhdCeV24v7PyMrdy4vnmTV2zmdYh-93MfjFTAunJirtgwPAdtWkCH8szlG-3IuD_TYV-DExhjkKFP0Dl910ZytvCh7TzUJQL_HjnPfo0tarGFC4Ex47S1WPShmMDOOYJZSgwta3MBsPFw8xwP9rDY4fxAf_j_PucY9UX12yVfQtQaUMkhgKqKSmfYLMVZBc",
-    
+    title: courseDetails?.title,
+    instructor: enrollment?.instructor || "MUDemy Instructor",
+    image: courseDetails?.image,
+    description: courseDetails?.description || "No description available",
     // 3. Status & Progress
-    status: enrollment.Status || "Active", 
+    status: enrollment.Status, 
     progress: progressPercent, 
-    
     // 4. Curriculum Preview (Optional)
     lessons: courseDetails?.curriculum ? 
       courseDetails.curriculum.slice(0, 3).map((mod, i) => ({
         title: mod.title || `Module ${i+1}`,
-        completed: false // Would require deeper 'take' data to map accurately
+        completed: false
       })) 
       : []
   };
@@ -76,7 +75,7 @@ export const studentService = {
       let progressData = [];
       try {
         const userProfile = await studentService.getStudentProfile();
-        const userId = userProfile.UserID || userProfile.id;
+        const userId = userProfile.UserID;
         
         // Step C: Fetch Progress Stats
         if (userId) {
@@ -94,7 +93,6 @@ export const studentService = {
           try {
             // Fetch rich course data
             const courseDetails = await courseService.getCourseById(enrollment.id);
-            
             // Merge everything
             return mapEnrollmentToFrontend(enrollment, courseDetails, progressData);
           } catch (err) {
@@ -103,7 +101,7 @@ export const studentService = {
           }
         })
       );
-
+      console.info("Detailed Enrollments:", detailedEnrollments);
       return detailedEnrollments;
     } catch (error) {
       console.error("Failed to fetch enrollments chain:", error);

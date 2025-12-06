@@ -7,6 +7,10 @@ export const useInstructorCourseController = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   
+  // NEW: State for Related Data (Multi-table requirement)
+  const [courseModules, setCourseModules] = useState([]);
+  const [courseEnrollments, setCourseEnrollments] = useState([]);
+
   // State for Filtering & Sorting
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("title");
@@ -14,10 +18,8 @@ export const useInstructorCourseController = () => {
   // State for Forms
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [submitting, setSubmitting] = useState(false); // NEW: Track submission status
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({ Title: "", Description: "", Difficulty: "Beginner", Language: "English" });
-  
-  // ERROR HANDLING STATE
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -61,10 +63,24 @@ export const useInstructorCourseController = () => {
     setIsCreating(false);
     setIsEditing(false);
     setLoading(true);
+    
+    // Clear previous related data
+    setCourseModules([]);
+    setCourseEnrollments([]);
+
     try {
-      const detail = await instructorService.getCourseDetails(courseId);
+      // Fetch Master (Course) + Details (Modules, Enrollments) in parallel
+      const [detail, modules, enrollments] = await Promise.all([
+        instructorService.getCourseDetails(courseId),
+        instructorService.getModules(courseId),
+        instructorService.getEnrollments(courseId)
+      ]);
+
       const courseObj = detail.course || detail; 
       setSelectedCourse(courseObj);
+      setCourseModules(modules);
+      setCourseEnrollments(enrollments);
+
       setFormData({
         Title: courseObj.Title || "",
         Description: courseObj.Description || "",
@@ -78,6 +94,7 @@ export const useInstructorCourseController = () => {
     }
   };
 
+  // ... (Create/Edit/Delete/Validation handlers remain mostly same)
   const handleCreateInit = () => {
     setSelectedCourse(null);
     setFormData({ Title: "", Description: "", Difficulty: "Beginner", Language: "English" });
@@ -94,7 +111,6 @@ export const useInstructorCourseController = () => {
 
   const handleDelete = async (courseId) => {
     if (!window.confirm("Are you sure you want to delete this course? This action cannot be undone.")) return;
-    
     try {
       await instructorService.deleteCourse(courseId);
       await loadData();
@@ -115,15 +131,12 @@ export const useInstructorCourseController = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     setError(null);
-
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
       return;
     }
-
-    setSubmitting(true); // START LOADING
-
+    setSubmitting(true);
     try {
       if (isCreating) {
         await instructorService.createCourse(formData);
@@ -131,11 +144,9 @@ export const useInstructorCourseController = () => {
         const cId = selectedCourse.CourseID || selectedCourse.id;
         await instructorService.updateCourse(cId, formData);
       }
-      
       setIsCreating(false);
       setIsEditing(false);
       await loadData();
-      
       if (isEditing && selectedCourse) {
         const cId = selectedCourse.CourseID || selectedCourse.id;
         handleSelectCourse(cId);
@@ -145,7 +156,7 @@ export const useInstructorCourseController = () => {
       const backendMsg = err.detail || err.message || "An unexpected database error occurred.";
       setError(backendMsg);
     } finally {
-      setSubmitting(false); // STOP LOADING
+      setSubmitting(false);
     }
   };
 
@@ -158,8 +169,9 @@ export const useInstructorCourseController = () => {
     profile,
     courses: filteredAndSortedCourses,
     selectedCourse,
+    relatedData: { modules: courseModules, enrollments: courseEnrollments }, // Export related data
     loading,
-    formState: { isEditing, isCreating, formData, error, submitting }, // Export submitting state
+    formState: { isEditing, isCreating, formData, error, submitting },
     filterState: { searchTerm, sortBy },
     actions: {
       setSearchTerm,

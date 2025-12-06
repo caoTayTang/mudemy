@@ -17,10 +17,10 @@ const InstructorAnalyticsPage = () => {
           </div>
         </div>
         <nav className="flex-1 px-4 space-y-2">
-          <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="/instructor/courses">
+          {/* <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="/instructor/courses">
             <span className="material-icons-outlined">apps</span>
             <span>Dashboard</span>
-          </a>
+          </a> */}
           <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="/instructor/courses">
             <span className="material-icons-outlined">play_circle</span>
             <span>Courses</span>
@@ -47,6 +47,12 @@ const InstructorAnalyticsPage = () => {
           <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="#">
             <span className="material-icons-outlined">settings</span>
             <span>Settings</span>
+          </a>
+        </div>
+        <div className="p-4" >
+          <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" onClick={actions.handleLogout}>
+            <span className="material-symbols-outlined">logout</span>
+            <span>Log out</span>
           </a>
         </div>
       </aside>
