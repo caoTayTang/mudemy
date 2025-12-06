@@ -130,3 +130,51 @@ BEGIN
     END
 END;
 GO
+
+-- ================================================
+-- 5. Trigger cập nhật số lượng đăng ký khóa học
+-- ================================================
+CREATE OR ALTER TRIGGER trg_update_course_enrollment_count
+ON ENROLLMENT
+AFTER INSERT, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- ======================
+    -- 1. Trường hợp INSERT
+    -- ======================
+    IF EXISTS (SELECT 1 FROM inserted)
+    BEGIN
+        WITH Ins AS (
+            SELECT CourseID, COUNT(*) AS Cnt
+            FROM inserted
+            GROUP BY CourseID
+        )
+        UPDATE C
+        SET Enrollment_count = ISNULL(C.Enrollment_count, 0) + Ins.Cnt
+        FROM COURSE C
+        JOIN Ins ON C.CourseID = Ins.CourseID;
+    END
+
+    -- ======================
+    -- 2. Trường hợp DELETE
+    -- ======================
+    IF EXISTS (SELECT 1 FROM deleted)
+    BEGIN
+        WITH Del AS (
+            SELECT CourseID, COUNT(*) AS Cnt
+            FROM deleted
+            GROUP BY CourseID
+        )
+        UPDATE C
+        SET Enrollment_count =
+            CASE 
+                WHEN ISNULL(C.Enrollment_count, 0) - Del.Cnt < 0 THEN 0
+                ELSE C.Enrollment_count - Del.Cnt
+            END
+        FROM COURSE C
+        JOIN Del ON C.CourseID = Del.CourseID;
+    END
+END;
+GO
