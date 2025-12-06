@@ -33,12 +33,23 @@ CREATE TABLE [USER] (
     Country NVARCHAR(100),
     Phone VARCHAR(10),
     Date_of_birth DATE,
-    Age INT DEFAULT 18 CHECK (Age > 0),
+    Age AS (
+        CASE 
+            WHEN Date_of_birth IS NULL THEN NULL
+            ELSE DATEDIFF(YEAR, Date_of_birth, GETDATE()) - 
+                 CASE 
+                     WHEN (MONTH(Date_of_birth) > MONTH(GETDATE())) OR 
+                          (MONTH(Date_of_birth) = MONTH(GETDATE()) AND DAY(Date_of_birth) > DAY(GETDATE()))
+                     THEN 1 
+                     ELSE 0 
+                 END
+        END
+    ),
     Last_login DATETIME,
     IFlag BIT,
     Bio_text NVARCHAR(MAX),
     Year_of_experience INT CHECK (Year_of_experience >= 0),
-    Average_rating DECIMAL(2,1) DEFAULT NULL CHECK (Average_rating >= 0 AND Average_rating <= 5),
+    Average_rating DECIMAL(3,1) DEFAULT NULL CHECK (Average_rating >= 0.0 AND Average_rating <= 5.0),
     SFlag BIT,
     Total_enrollments INT DEFAULT 0 CHECK (Total_enrollments >= 0),
 

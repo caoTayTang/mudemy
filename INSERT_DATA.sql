@@ -9,7 +9,7 @@ GO
 
 -- 1. USER: 13 rows
 INSERT INTO [USER] (UserID, User_name, Email, [Password], Full_name, City, Country, Phone, Date_of_birth, Last_login, IFlag, Bio_text, Year_of_experience, Average_rating, SFlag, Total_enrollments) VALUES
-('USR00001', N'Đạt Phạm',    'dat.pham@mudemy.edu.vn',     'P@ssw0rd123!', N'Phạm Lê Tiến Đạt',        N'TP. Hồ Chí Minh', N'Việt Nam', '0903123456', '1986-06-15', '2025-11-23 19:30:00', 1, N'Giảng viên MUdemy', 15, 1, 0, 0), 
+('USR00001', N'Đạt Phạm',    'dat.pham@mudemy.edu.vn',     'P@ssw0rd123!', N'Phạm Lê Tiến Đạt',        N'TP. Hồ Chí Minh', N'Việt Nam', '0903123456', '1986-06-15', '2025-11-23 19:30:00', 1, N'Giảng viên MUdemy', 15, 1.0, 0, 0), 
 ('USR00002', N'Thịnh Võ',     'thinh.vo@mudemy.edu.vn',       'v@ssw0rD312!', N'Võ Văn Thịnh',      N'TP. Hồ Chí Minh', N'Việt Nam', '0904123457', '1985-03-20', '2025-11-23 19:29:01', 1, N'Giảng viên MUdemy', 14, 2.3, 0, 0), 
 ('USR00003', N'Thuận Lương',     'thuan.luong@mudemy.edu.vn',     'b@ssW0rd231!', N'Lương Minh Thuận',  N'TP. Hồ Chí Minh', N'Việt Nam', '0905123458', '1987-09-10', '2025-11-23 16:30:00', 1, N'Giảng viên MUdemy', 12, 3.0, 0, 0), 
 ('USR00004', N'Huy Nguyễn',     'huy.nguyen@mudemy.edu.vn',        'h@cKd00r555!', N'Nguyễn Quốc Huy',       N'TP. Hồ Chí Minh', N'Việt Nam', '0906123459', '1988-11-05', '2025-11-23 20:05:36', 1, N'Giảng viên MUdemy', 13, 4.0, 0, 0), 
