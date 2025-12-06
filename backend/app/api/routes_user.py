@@ -232,13 +232,25 @@ def create_take(data: Dict[str, Any] = Body(...), current_user: CurrentUser = De
 	return JSONResponse(status_code=201, content={"status": "created", "UserID": t.UserID, "LessonID": t.LessonID})
 
 
+@router.get("/takes/{user_id}/progress")
+def get_lesson_progress(user_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
+	print("LOGGGGG huhu")
+	print("Current user:", current_user)
+	if current_user.role == 'tutee' and user_id != current_user.user_id:
+		raise HTTPException(status_code=403, detail="Not authorized")
+	stats = take_service.get_lesson_progress(user_id)
+	return {"status": "success", "progress": stats}
+
+
+
 @router.get("/takes/{user_id}/{lesson_id}")
 def get_take(user_id: str, lesson_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
 	if current_user.role == 'tutee' and user_id != current_user.user_id:
 		raise HTTPException(status_code=403, detail="Not authorized")
 	t = take_service.get_take(user_id, lesson_id)
+	print("User ID:", user_id, "Lesson ID:", lesson_id, "Take:", t)
 	if not t:
-		raise HTTPException(status_code=404, detail="Take not found")
+		raise HTTPException(status_code=404, detail="Take not found 1")
 	return {"status": "success", "take": {"UserID": t.UserID, "LessonID": t.LessonID, "is_finished": getattr(t, 'is_finished', None)}}
 
 
@@ -264,7 +276,7 @@ def mark_lesson_finished(user_id: str, lesson_id: str, current_user: CurrentUser
 		raise HTTPException(status_code=403, detail="Not authorized")
 	t = take_service.mark_lesson_finished(user_id, lesson_id)
 	if not t:
-		raise HTTPException(status_code=404, detail="Take not found")
+		raise HTTPException(status_code=404, detail="Take not found 2")
 	return {"status": "updated", "UserID": t.UserID, "LessonID": t.LessonID}
 
 
@@ -274,7 +286,7 @@ def mark_lesson_unfinished(user_id: str, lesson_id: str, current_user: CurrentUs
 		raise HTTPException(status_code=403, detail="Not authorized")
 	t = take_service.mark_lesson_unfinished(user_id, lesson_id)
 	if not t:
-		raise HTTPException(status_code=404, detail="Take not found")
+		raise HTTPException(status_code=404, detail="Take not found 3")
 	return {"status": "updated", "UserID": t.UserID, "LessonID": t.LessonID}
 
 
@@ -284,17 +296,8 @@ def delete_take(user_id: str, lesson_id: str, current_user: CurrentUser = Depend
 		raise HTTPException(status_code=403, detail="Not authorized")
 	ok = take_service.delete_take(user_id, lesson_id)
 	if not ok:
-		raise HTTPException(status_code=404, detail="Take not found")
+		raise HTTPException(status_code=404, detail="Take not found 4")
 	return {"status": "deleted"}
-
-
-@router.get("/takes/{user_id}/progress")
-def get_lesson_progress(user_id: str, current_user: CurrentUser = Depends(get_current_user_from_session)):
-	if current_user.role == 'tutee' and user_id != current_user.user_id:
-		raise HTTPException(status_code=403, detail="Not authorized")
-	stats = take_service.get_lesson_progress(user_id)
-	return {"status": "success", "progress": stats}
-
 
 # ---------------------------
 # Interests endpoints

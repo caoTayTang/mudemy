@@ -66,6 +66,7 @@ def create_course(
         raise HTTPException(status_code=403, detail="Not authorized, requires INSTRUCTOR role")
     
     try:
+        print("Creating course with data:", course_data)
         course = course_service.create_course(course_data)
         return JSONResponse(
             status_code=201,
