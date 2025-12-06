@@ -26,13 +26,14 @@ CREATE TABLE [USER] (
     UserID VARCHAR(10) PRIMARY KEY,
     User_name NVARCHAR(100) NOT NULL UNIQUE,
     Email NVARCHAR(100) NOT NULL UNIQUE,
-    [Password] NVARCHAR(255) NOT NULL, 
+    [Password] VARCHAR(255) NOT NULL, 
 
     Full_name NVARCHAR(100),
     City NVARCHAR(100),
     Country NVARCHAR(100),
     Phone VARCHAR(10),
     Date_of_birth DATE,
+    Age INT DEFAULT 18 CHECK (Age > 0),
     Last_login DATETIME,
     IFlag BIT,
     Bio_text NVARCHAR(MAX),
@@ -42,8 +43,8 @@ CREATE TABLE [USER] (
 
     CONSTRAINT chk_email_format CHECK (Email LIKE '%@%.%'),
     CONSTRAINT chk_password_length CHECK (LEN([Password]) >= 6),
-    CONSTRAINT chk_password_lowercase CHECK ([Password] LIKE '%[a-z]%' COLLATE Latin1_General_CS_AS),
-    CONSTRAINT chk_password_uppercase CHECK ([Password] LIKE '%[A-Z]%' COLLATE Latin1_General_CS_AS),
+    CONSTRAINT chk_password_lowercase CHECK ([Password] COLLATE Latin1_General_BIN2 LIKE '%[a-z]%'),
+    CONSTRAINT chk_password_uppercase CHECK ([Password] COLLATE Latin1_General_BIN2 LIKE '%[A-Z]%'),
     CONSTRAINT chk_password_digit CHECK ([Password] LIKE '%[0-9]%'),
     CONSTRAINT chk_password_special CHECK ([Password] LIKE '%[^a-zA-Z0-9]%')
 );
@@ -92,6 +93,7 @@ CREATE TABLE COURSE (
     [Language] NVARCHAR(50) NOT NULL,
     Title NVARCHAR(200) NOT NULL,
     [Description] NVARCHAR(MAX),
+    Enrollment_count INT DEFAULT 0 CHECK (Enrollment_count >= 0),
     CONSTRAINT chk_course_title_length CHECK (LEN(Title) >= 5)
 );
 GO
@@ -141,6 +143,7 @@ CREATE TABLE ENROLLMENT (
     StudentID VARCHAR(10) NOT NULL,
     [Status] NVARCHAR(20) DEFAULT N'Active' CHECK ([Status] IN (N'Active', N'Completed', N'Dropped', N'Suspended')),
     Enroll_date DATETIME NOT NULL DEFAULT GETDATE(),
+    Progress DECIMAL(3,1) DEFAULT 0.0 CHECK (Progress >= 0 AND Progress <= 100),
     PRIMARY KEY (EnrollmentID, CourseID, PaymentID, StudentID),
     CONSTRAINT FK_Enrollment_Course FOREIGN KEY (CourseID) 
         REFERENCES COURSE(CourseID) ON DELETE CASCADE ON UPDATE CASCADE,
