@@ -67,6 +67,52 @@ GO
 -- TEST
 SELECT * FROM dbo.GetInstructorsByQualificationKeyword('Sci')
 GO
+
+-- 3. CalculateCourseAverageScore: Tính điểm trung bình của khóa học mà sinh viên tham gia
+-- ARGS:
+--      + StudentID(VARCHAR(10)): 
+--      + CourseID(VARCHAR(10))
+CREATE OR ALTER FUNCTION CalculateCourseAverageScore
+(
+    @StudentID VARCHAR(10),
+    @CourseID VARCHAR(10)
+)
+RETURNS DECIMAL(5,2)
+AS
+BEGIN
+    DECLARE @AverageScore DECIMAL(5,2);
+    IF @StudentID IS NULL OR @CourseID IS NULL OR 
+       NOT EXISTS (SELECT 1 FROM [USER] WHERE UserID = @StudentID) OR
+       NOT EXISTS (SELECT 1 FROM COURSE WHERE CourseID = @CourseID)
+        RETURN NULL; 
+
+    SELECT @AverageScore = AVG(Grade)
+    FROM (
+        SELECT S.Grade
+        FROM QUIZ_SUBMISSION S
+        JOIN QUIZ Q ON S.QuizID = Q.QuizID
+        JOIN [MODULE] M ON Q.ModuleID = M.ModuleID
+        WHERE S.UserID = @StudentID AND M.CourseID = @CourseID AND S.Grade IS NOT NULL
+        UNION ALL
+        SELECT S.Grade
+        FROM ASSIGN_SUBMISSION S
+        JOIN ASSIGNMENT A ON S.AssID = A.AssID
+        JOIN [MODULE] M ON A.ModuleID = M.ModuleID
+        WHERE S.UserID = @StudentID AND M.CourseID = @CourseID AND S.Grade IS NOT NULL
+    ) AS T
+    IF @AverageScore IS NULL
+        SET @AverageScore = 0.00; 
+    RETURN @AverageScore;
+END;
+GO
+
+-- TEST
+SELECT 
+    'USR00006' AS StudentID, 
+    'CRS00002' AS CourseID,
+    dbo.CalculateCourseAverageScore('USR00006', 'CRS00002') AS ActualAverageScore,
+    '88.00' AS ExpectedResult;
+GO
 -- ================================================
 -- PROCEDURE
 -- ================================================

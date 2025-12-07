@@ -6,26 +6,22 @@ GO
 SET DATEFORMAT ymd;
 GO
 
--- VÔ HIỆU HÓA TRIGGERS - CHÈN ID THỦ CÔNG
-DISABLE TRIGGER trg_user_id_auto_increment ON [USER];
-DISABLE TRIGGER trg_course_id_auto_increment ON COURSE;
-GO
 
 -- 1. USER: 13 rows
-INSERT INTO [USER] (UserID, User_name, Email, [Password], Full_name, City, Country, Phone, Date_of_birth, Last_login, IFlag, Bio_text, Year_of_experience, SFlag, Total_enrollments) VALUES
-('USR00001', N'Đạt Phạm',    'dat.pham@mudemy.edu.vn',     'P@ssw0rd123!', N'Phạm Lê Tiến Đạt',        N'TP. Hồ Chí Minh', N'Việt Nam', '0903123456', '1986-06-15', '2025-11-23 19:30:00', 1, N'Giảng viên MUdemy', 15, 0, 0), 
-('USR00002', N'Thịnh Võ',     'thinh.vo@mudemy.edu.vn',       'v@ssw0rd312!', N'Võ Văn Thịnh',      N'TP. Hồ Chí Minh', N'Việt Nam', '0904123457', '1985-03-20', '2025-11-23 19:29:01', 1, N'Giảng viên MUdemy', 14, 0, 0), 
-('USR00003', N'Thuận Lương',     'thuan.luong@mudemy.edu.vn',     'b@ssw0rd231!', N'Lương Minh Thuận',  N'TP. Hồ Chí Minh', N'Việt Nam', '0905123458', '1987-09-10', '2025-11-23 16:30:00', 1, N'Giảng viên MUdemy', 12, 0, 0), 
-('USR00004', N'Huy Nguyễn',     'huy.nguyen@mudemy.edu.vn',        'h@ckd00r555!', N'Nguyễn Quốc Huy',       N'TP. Hồ Chí Minh', N'Việt Nam', '0906123459', '1988-11-05', '2025-11-23 20:05:36', 1, N'Giảng viên MUdemy', 13, 0, 0), 
-('USR00005', N'Đại Lê',     'dai.lechi@mudemy.edu.vn',        'b@ckd00rsiu!', N'Lê Chí Đại',       N'TP. Hồ Chí Minh', N'Việt Nam', '0906123459', '1988-11-05', '2025-11-23 23:05:25', 1, N'Giảng viên MUdemy', 13, 0, 0), 
-('USR00006', N'Tuấn BK',       'anhtuan@hcmut.edu.vn','t@ssw0r123!', N'Nguyễn Anh Tuấn',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938111222', '2005-04-12', '2025-11-23 15:06:03', 0, N'SV Bách Khoa TP.HCM', NULL, 1, 1), 
-('USR00007', N'Linh Cute',     'ngoclinh@fpt.edu.vn',         'y@ssh0rd102!', N'Trần Ngọc Linh',           N'TP. Hồ Chí Minh', N'Việt Nam', '0938222333', '2006-08-25', '2025-11-22 07:03:05', 0, N'SV Đại Học FPT', NULL, 1, 1), 
-('USR00008', N'Thọ Fan MU',        'ductho@gmail.com',            'tho#w0rd123!', N'Lê Đức Thọ',               N'TP. Hồ Chí Minh', N'Việt Nam', '0938333444', '2005-12-30', '2025-11-22 08:03:24', 0, N'SV KHTN TP.HCM', NULL, 1, 1), 
-('USR00009', N'Trang Kute',     'thuytrang98@gmail.com',       'trangp@ssw0rd22!', N'Phạm Thúy Trang',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938444555', '2007-05-18', '2025-11-22 07:03:05', 0, N'SV UEH', NULL, 1, 1), 
-('USR00010', N'baokhanh', 'baokhanh@gmail.com',        'h%w0rd345!', N'Vũ Bảo Khanh',             N'TP. Hồ Chí Minh', N'Việt Nam', '0938555666', '2004-02-14', '2025-11-22 13:03:05', 0, N'SV FTU', NULL, 1, 1), 
-('USR00011', N'vinhpro', 'vinhnguyen@gmail.com',       'P@ssw0rd123!', N'Nguyễn Hữu Vinh',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938666777', '2000-10-10', '2025-11-21 07:03:05', 0, N'SV UEH', NULL, 1, 1), 
-('USR00012', N'LAnh',        'lananh@gmail.com',            't@ssw0rh788!', N'Đỗ Lan Anh',               N'TP. Hồ Chí Minh', N'Việt Nam', '0938777888', '2004-07-19', '2025-11-23 08:03:05', 0, N'SV UFM', NULL, 1, 1), 
-('USR00013', N'Khoa Wibu',        'khoamu.nguyen@provn.vn',        'f@nM0rd666!', N'Nguyễn Đặng Khoa',         N'TP. Hồ Chí Minh', N'Việt Nam', '0938888999', '2005-01-01', '2025-11-22 07:04:07', 0, N'Fan MU', NULL, 1, 1);
+INSERT INTO [USER] (UserID, User_name, Email, [Password], Full_name, City, Country, Phone, Date_of_birth, Last_login, IFlag, Bio_text, Year_of_experience, Average_rating, SFlag) VALUES
+('USR00001', N'Đạt Phạm',    'dat.pham@mudemy.edu.vn',     'P@ssw0rd123!', N'Phạm Lê Tiến Đạt',        N'TP. Hồ Chí Minh', N'Việt Nam', '0903123456', '1986-06-15', '2025-11-23 19:30:00', 1, N'Giảng viên MUdemy', 15, 1.0, 0), 
+('USR00002', N'Thịnh Võ',     'thinh.vo@mudemy.edu.vn',       'v@ssw0rD312!', N'Võ Văn Thịnh',      N'TP. Hồ Chí Minh', N'Việt Nam', '0904123457', '1985-03-20', '2025-11-23 19:29:01', 1, N'Giảng viên MUdemy', 14, 2.3, 0), 
+('USR00003', N'Thuận Lương',     'thuan.luong@mudemy.edu.vn',     'b@ssW0rd231!', N'Lương Minh Thuận',  N'TP. Hồ Chí Minh', N'Việt Nam', '0905123458', '1987-09-10', '2025-11-23 16:30:00', 1, N'Giảng viên MUdemy', 12, 3.0, 0), 
+('USR00004', N'Huy Nguyễn',     'huy.nguyen@mudemy.edu.vn',        'h@cKd00r555!', N'Nguyễn Quốc Huy',       N'TP. Hồ Chí Minh', N'Việt Nam', '0906123459', '1988-11-05', '2025-11-23 20:05:36', 1, N'Giảng viên MUdemy', 13, 4.0, 0), 
+('USR00005', N'Đại Lê',     'dai.lechi@mudemy.edu.vn',        'b@ckd00rSiu!', N'Lê Chí Đại',       N'TP. Hồ Chí Minh', N'Việt Nam', '0906123459', '1988-11-05', '2025-11-23 23:05:25', 1, N'Giảng viên MUdemy', 13, 3.5, 0), 
+('USR00006', N'Tuấn BK',       'anhtuan@hcmut.edu.vn','t@ssw0R123!', N'Nguyễn Anh Tuấn',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938111222', '2005-04-12', '2025-11-23 15:06:03', 0, N'SV Bách Khoa TP.HCM', NULL, NULL, 1), 
+('USR00007', N'Linh Cute',     'ngoclinh@fpt.edu.vn',         'Y@ssh0rd102!', N'Trần Ngọc Linh',           N'TP. Hồ Chí Minh', N'Việt Nam', '0938222333', '2006-08-25', '2025-11-22 07:03:05', 0, N'SV Đại Học FPT', NULL, NULL, 1), 
+('USR00008', N'Thọ Fan MU',        'ductho@gmail.com',            'Tho#w0rd123!', N'Lê Đức Thọ',               N'TP. Hồ Chí Minh', N'Việt Nam', '0938333444', '2005-12-30', '2025-11-22 08:03:24', 0, N'SV KHTN TP.HCM', NULL, NULL, 1), 
+('USR00009', N'Trang Kute',     'thuytrang98@gmail.com',       'traNgp@ssw0rd22!', N'Phạm Thúy Trang',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938444555', '2007-05-18', '2025-11-22 07:03:05', 0, N'SV UEH', NULL, NULL, 1), 
+('USR00010', N'baokhanh', 'baokhanh@gmail.com',        'h%w0Rd345!', N'Vũ Bảo Khanh',             N'TP. Hồ Chí Minh', N'Việt Nam', '0938555666', '2004-02-14', '2025-11-22 13:03:05', 0, N'SV FTU', NULL, NULL, 1), 
+('USR00011', N'vinhpro', 'vinhnguyen@gmail.com',       'P@SSw0rd123!', N'Nguyễn Hữu Vinh',          N'TP. Hồ Chí Minh', N'Việt Nam', '0938666777', '2000-10-10', '2025-11-21 07:03:05', 0, N'SV UEH', NULL, NULL, 1), 
+('USR00012', N'LAnh',        'lananh@gmail.com',            'T@ssw0rh788!', N'Đỗ Lan Anh',               N'TP. Hồ Chí Minh', N'Việt Nam', '0938777888', '2004-07-19', '2025-11-23 08:03:05', 0, N'SV UFM', NULL, NULL, 1), 
+('USR00013', N'Khoa Wibu',        'khoamu.nguyen@provn.vn',        'f@nM0rd666!', N'Nguyễn Đặng Khoa',         N'TP. Hồ Chí Minh', N'Việt Nam', '0938888999', '2005-01-01', '2025-11-22 07:04:07', 0, N'Fan MU', NULL, NULL, 1);
 GO
 
 -- 2. COURSE: 6 rows 
@@ -111,24 +107,32 @@ INSERT INTO REQUIRES (CourseID, Required_courseID) VALUES
 ('CRS00005', 'CRS00006');
 GO
 
--- 9. PAYMENT: 8 rows
+-- 9. PAYMENT: 12 rows
 INSERT INTO PAYMENT (PaymentID, Amount, Payment_method, UserID) VALUES
-('PAY001',1590000,N'Bank Transfer','USR00013'),('PAY002',2490000,N'Bank Transfer','USR00006'),
-('PAY003',990000,N'PayPal','USR00008'),('PAY004',2990000,N'Credit Card','USR00007'),
-('PAY005',1190000,N'Bank Transfer','USR00009'),('PAY006',890000,N'Credit Card','USR00010'),
-('PAY007',1590000,N'PayPal','USR00011'),('PAY008',2490000,N'Bank Transfer','USR00012');
+('PAY001', 890000, N'Bank Transfer', 'USR00013'), ('PAY002', 1190000, N'Bank Transfer', 'USR00013'),
+('PAY003',1590000,N'Bank Transfer','USR00013'), ('PAY004', 990000, N'Bank Transfer', 'USR00006'),
+('PAY005',890000,N'PayPal','USR00006'), ('PAY006',2490000,N'Bank Transfer','USR00006'),
+('PAY007',990000,N'PayPal','USR00008'),('PAY008',2990000,N'Credit Card','USR00007'),
+('PAY009',890000,N'Bank Transfer','USR00009'),
+('PAY010',1190000,N'Bank Transfer','USR00009'),
+('PAY011',2990000,N'Credit Card','USR00010'),
+('PAY012', 890000, N'Bank Transfer', 'USR00012');
 GO
 
--- 10. ENROLLMENT: 8 rows
+-- 10. ENROLLMENT: 12 rows
 INSERT INTO ENROLLMENT (EnrollmentID,CourseID,PaymentID,StudentID,[Status]) VALUES
-('ENR001','CRS00001','PAY001','USR00013',N'Active'),
-('ENR002','CRS00002','PAY002','USR00006',N'Active'),
-('ENR003','CRS00003','PAY003','USR00008',N'Completed'),
-('ENR004','CRS00004','PAY004','USR00007',N'Active'),
-('ENR005','CRS00005','PAY005','USR00009',N'Active'),
-('ENR006','CRS00006','PAY006','USR00010',N'Active'),
-('ENR007','CRS00001','PAY007','USR00011',N'Active'),
-('ENR008','CRS00002','PAY008','USR00012',N'Active');
+('ENR001', 'CRS00006', 'PAY001', 'USR00013', N'Completed'),
+('ENR002', 'CRS00005', 'PAY002', 'USR00013', N'Completed'),
+('ENR003','CRS00001','PAY003','USR00013',N'Active'),
+('ENR004', 'CRS00003', 'PAY004', 'USR00006', N'Completed'),
+('ENR005', 'CRS00006', 'PAY005', 'USR00006', N'Completed'),
+('ENR006','CRS00002','PAY006','USR00006',N'Active'),
+('ENR007','CRS00003','PAY007','USR00008',N'Completed'),
+('ENR008','CRS00004','PAY008','USR00007',N'Active'),
+('ENR009','CRS00006','PAY009','USR00009',N'Completed'),
+('ENR010','CRS00005','PAY010','USR00009',N'Active'),
+('ENR011','CRS00004','PAY011','USR00010',N'Active'),
+('ENR012','CRS00006','PAY012','USR00012',N'Active');
 GO
 
 -- 11. CONTENT: 15 rows
@@ -172,7 +176,7 @@ INSERT INTO [IMAGE] (ContentID, ImageID, [Image]) VALUES
 ('CON004', 'IMG001', N'/images/[CON004]react-project-structure.png'), 
 ('CON009', 'IMG002', N'/images/[CON009]golden-ratio-ui.jpg'),
 ('CON010', 'IMG003', N'/images/[CON010]devops-pipeline.png'), 
-('CON014', 'IMG004', N'/images/[CON014]cpp-memory-diagram.png');;
+('CON014', 'IMG004', N'/images/[CON014]cpp-memory-diagram.png');
 GO
 
 -- 15. RESOURCE: 4 rows
@@ -241,41 +245,41 @@ INSERT INTO ASSIGN_SUBMISSION (SubID, UserID, AssID, Sub_content, Grade) VALUES
 ('SUB001', 'USR00006', 'ASS001', N'submission/SUB002/cafe-app.zip', 88.00),
 ('SUB002', 'USR00009', 'ASS002', N'Chưa nộp bài', 0.00),
 ('SUB003', 'USR00010', 'ASS003', N'submission/SUB003/Deploy-AWS.zip', 95.00),
-('SUB004', 'USR00012', 'ASS004', N'submission/SUB004/cpp-game.zip', 85.00);;
+('SUB004', 'USR00012', 'ASS004', N'submission/SUB004/cpp-game.zip', 85.00);
 GO
 
--- 21. QUIZ_SUBMISSION: 6 rows (Bổ sung QUI005 của USR00008)
+-- 21. QUIZ_SUBMISSION: 6 rows
 INSERT INTO QUIZ_SUBMISSION (SubID, UserID, QuizID, Sub_content, Grade) VALUES
-('SUB001', 'USR00005', 'QUI001', N'Hoàn thành Quiz DeepLearning lần 1', 95.00),
-('SUB002', 'USR00011', 'QUI002', N'Hoàn thành Quiz FullStack lần 1', 100.00),
+('SUB001', 'USR00013', 'QUI001', N'Hoàn thành Quiz DeepLearning lần 1', 95.00),
+('SUB002', 'USR00006', 'QUI002', N'Hoàn thành Quiz FullStack lần 1', 100.00),
 ('SUB003', 'USR00008', 'QUI003', N'Hoàn thành Quiz Figma lần 1', 100.00),
 ('SUB004', 'USR00007', 'QUI004', N'Hoàn thành Quiz Docker lần 1', 100.00),
-('SUB005', 'USR00012', 'QUI005', N'Hoàn thành Quiz Pandas lần 1', 90.00),
-('SUB006', 'USR00008', 'QUI005', N'Hoàn thành Quiz Pandas lần 2', 92.00); 
+('SUB005', 'USR00009', 'QUI005', N'Hoàn thành Quiz Pandas lần 1', 90.00),
+('SUB006', 'USR00009', 'QUI005', N'Hoàn thành Quiz Pandas lần 2', 92.00); 
 GO
 
--- 21. TAKE: 10 rows
+-- 21. TAKE: 17 rows
 INSERT INTO TAKE (UserID,LessonID,is_finished) VALUES
-('USR00013','CON001',1),('USR00006','CON003',1),('USR00008','CON004',1),
-('USR00007','CON005',1),('USR00009','CON006',1),('USR00010','CON007',0),
-('USR00005','QUI001',1),
+('USR00013','CON001',1),('USR00013','CON003',1),('USR00006','CON004',1),
+('USR00006','CON005',1),('USR00009','CON012',1),('USR00010','CON011',0),
+('USR00013','QUI001',1),
 ('USR00006','ASS001',1),
-('USR00011','QUI002',1),
+('USR00006','QUI002',1),
 ('USR00009','ASS002',0),
 ('USR00008','QUI003',1),
 ('USR00007','QUI004',1),
-('USR00012','QUI005',1),
-('USR00008','QUI005',1),
-('USR00010','CON004',1),   
-('USR00012','CON014',1),  
+('USR00009','QUI005',1),   
+('USR00012','CON015',1),  
 ('USR00010','ASS003',1), 
 ('USR00012','ASS004',1);
 GO
 
--- 22. CERTIFICATE: 4 rows
+-- 22. CERTIFICATE: 6 rows
 INSERT INTO CERTIFICATE (CertificateID,CourseID,StudentID,Certificate_number, Issue_date) VALUES
 ('CER001','CRS00003','USR00008','MUD-UIUX-001', '2025-11-20'),
-('CER002','CRS00001','USR00013','MUD-PYTHON-001', '2025-11-15'),
-('CER003','CRS00002','USR00006','MUD-FULLSTACK-001', '2025-11-20'),
-('CER004','CRS00005','USR00009','MUD-DATA-001', '2025-11-18');
+('CER002','CRS00006','USR00013','MUD-BASIC-PROGRAMMING-001', '2025-6-15'),
+('CER003', 'CRS00005', 'USR00013', 'MUD-DATA-001', '2025-11-20'),
+('CER004','CRS00003','USR00006','MUD-UIUX-002', '2025-11-20'),
+('CER005', 'CRS00006', 'USR00006', 'MUD-BASIC-PROGRAMMING-002', '2025-4-21'),
+('CER006','CRS00006','USR00009','MUD-BASIC-PROGRAMMING-003', '2025-11-18');
 GO
