@@ -96,7 +96,7 @@ class Enrollment(Base):
     StudentID = Column(String(10), ForeignKey('USER.UserID'), primary_key=True)
     Status = Column(NVARCHAR(20), default='Active')
     Enroll_date = Column(DateTime, default=datetime.utcnow)
-    Progress = Column(DECIMAL(3, 1),CheckConstraint("Progress >= 0 AND Progress <= 100"), nullable=False, default=0.0)
+    Progress = Column(DECIMAL(4, 1),CheckConstraint("Progress >= 0 AND Progress <= 100"), nullable=False, default=0.0)
 
 
 class Payment(Base):
