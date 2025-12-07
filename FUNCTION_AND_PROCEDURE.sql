@@ -67,7 +67,7 @@ BEGIN
 END;
 GO
 -- TEST
-SELECT * FROM dbo.GetInstructorsByQualificationKeyword('PYTHON')
+SELECT * FROM dbo.GetInstructorByKeyword('PYTHON')
 GO
 
 -- 3. CalculateCourseAverageScore: Tính điểm trung bình của khóa học mà sinh viên tham gia

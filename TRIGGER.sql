@@ -190,10 +190,9 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    /*
-      Bước 1: Tìm tất cả các cặp (UserID, LessonID) bị ảnh hưởng
-      (bao gồm cả rows từ inserted và deleted)
-    */
+    -- =============================================================
+    -- Bước 1: Tìm tất cả các cặp (UserID, LessonID) bị ảnh hưởng
+    -- =============================================================
     ;WITH AffectedLessons AS (
         SELECT DISTINCT UserID, LessonID
         FROM (
@@ -203,22 +202,22 @@ BEGIN
         ) x
     ),
 
-    /*
-      Bước 2: Map LessonID -> ModuleID (lesson có thể là Content, Quiz hoặc Assignment)
-      Lấy ModuleID từ từng bảng tương ứng (nếu tồn tại)
-    */
+    -- =============================================================
+    -- Bước 2: Map LessonID -> ModuleID 
+    -- (Lesson có thể nằm trong bảng CONTENT, QUIZ hoặc ASSIGNMENT)
+    -- =============================================================
     LessonModules AS (
         SELECT al.UserID, al.LessonID,
                COALESCE(c.ModuleID, q.ModuleID, a.ModuleID) AS ModuleID
         FROM AffectedLessons al
         LEFT JOIN CONTENT c ON c.ContentID = al.LessonID
-        LEFT JOIN QUIZ q      ON q.QuizID     = al.LessonID
-        LEFT JOIN ASSIGNMENT a ON a.AssID     = al.LessonID
+        LEFT JOIN QUIZ q      ON q.QuizID      = al.LessonID
+        LEFT JOIN ASSIGNMENT a ON a.AssID      = al.LessonID
     ),
 
-    /*
-      Bước 3: Map ModuleID -> CourseID và lấy danh sách các cặp (UserID, CourseID) cần cập nhật
-    */
+    -- =============================================================
+    -- Bước 3: Map ModuleID -> CourseID để lấy danh sách cần update
+    -- =============================================================
     AffectedEnrollments AS (
         SELECT DISTINCT lm.UserID, m.CourseID
         FROM LessonModules lm
@@ -226,84 +225,64 @@ BEGIN
         WHERE lm.ModuleID IS NOT NULL
     )
 
-    /*
-      Bước 4: Cập nhật progress cho mỗi cặp (StudentID, CourseID) trong ENROLLMENT
-      - TotalLessons: số lesson (content+quiz+assignment) thuộc course
-      - FinishedLessons: số lesson đã is_finished = 1 của user thuộc course
-    */
+    -- =============================================================
+    -- Bước 4: Cập nhật Progress và Status trong bảng ENROLLMENT
+    -- =============================================================
     UPDATE E
-    SET Progress = 
-        CASE 
-            WHEN calc.TotalLessons = 0 THEN CAST(0.0 AS DECIMAL(3,1))
-            ELSE CAST( ROUND( (CAST(calc.FinishedLessons AS FLOAT) * 100.0) / calc.TotalLessons, 1) AS DECIMAL(3,1) )
+    SET 
+        -- Cập nhật Progress
+        Progress = FinalCalc.NewProgress,
+        
+        -- Cập nhật Status dựa trên Progress mới
+        [Status] = CASE 
+            -- Trường hợp 1: Hoàn thành 100% -> Set thành Completed
+            WHEN FinalCalc.NewProgress = 100.0 THEN N'Completed'
+            
+            -- Trường hợp 2: Nếu đã từng Completed nhưng giờ < 100% (ví dụ xóa bớt bài đã học) -> Quay về Active
+            WHEN FinalCalc.NewProgress < 100.0 AND E.[Status] = N'Completed' THEN N'Active'
+            
+            -- Trường hợp 3: Giữ nguyên trạng thái cũ (Active, Dropped, Suspended...)
+            ELSE E.[Status]
         END
     FROM ENROLLMENT E
-    INNER JOIN AffectedEnrollments AE
-        ON E.StudentID = AE.UserID
-       AND E.CourseID = AE.CourseID
-    CROSS APPLY
-    (
-        -- Tính TotalLessons và FinishedLessons cho AE.UserID / AE.CourseID
-        SELECT
-            -- Total lessons in the course (distinct lesson ids)
+    INNER JOIN AffectedEnrollments AE 
+        ON E.StudentID = AE.UserID 
+        AND E.CourseID = AE.CourseID
+    -- Tính toán số lượng bài học (Counts)
+    CROSS APPLY (
+        SELECT 
+            -- Tổng số bài học trong khóa
             (
                 SELECT COUNT(*) FROM
                 (
-                    -- Content lessons
-                    SELECT c.ContentID AS LessonID
-                    FROM CONTENT c
-                    JOIN [MODULE] mm ON c.ModuleID = mm.ModuleID
-                    WHERE mm.CourseID = AE.CourseID
-
-                    UNION
-
-                    -- Quiz lessons
-                    SELECT q.QuizID AS LessonID
-                    FROM QUIZ q
-                    JOIN [MODULE] mm2 ON q.ModuleID = mm2.ModuleID
-                    WHERE mm2.CourseID = AE.CourseID
-
-                    UNION
-
-                    -- Assignment lessons
-                    SELECT a.AssID AS LessonID
-                    FROM ASSIGNMENT a
-                    JOIN [MODULE] mm3 ON a.ModuleID = mm3.ModuleID
-                    WHERE mm3.CourseID = AE.CourseID
+                    SELECT c.ContentID FROM CONTENT c JOIN [MODULE] m ON c.ModuleID = m.ModuleID WHERE m.CourseID = AE.CourseID
+                    UNION ALL
+                    SELECT q.QuizID FROM QUIZ q JOIN [MODULE] m ON q.ModuleID = m.ModuleID WHERE m.CourseID = AE.CourseID
+                    UNION ALL
+                    SELECT a.AssID FROM ASSIGNMENT a JOIN [MODULE] m ON a.ModuleID = m.ModuleID WHERE m.CourseID = AE.CourseID
                 ) AS AllLessons
             ) AS TotalLessons,
 
-            -- Finished lessons for this student in this course
+            -- Tổng số bài đã hoàn thành (is_finished = 1)
             (
                 SELECT COUNT(*) FROM
                 (
-                    -- Finished content lessons
-                    SELECT t.LessonID
-                    FROM TAKE t
-                    JOIN CONTENT c2 ON c2.ContentID = t.LessonID
-                    JOIN [MODULE] mm4 ON c2.ModuleID = mm4.ModuleID
-                    WHERE t.UserID = AE.UserID AND t.is_finished = 1 AND mm4.CourseID = AE.CourseID
-
-                    UNION
-
-                    -- Finished quiz lessons
-                    SELECT t2.LessonID
-                    FROM TAKE t2
-                    JOIN QUIZ q2 ON q2.QuizID = t2.LessonID
-                    JOIN [MODULE] mm5 ON q2.ModuleID = mm5.ModuleID
-                    WHERE t2.UserID = AE.UserID AND t2.is_finished = 1 AND mm5.CourseID = AE.CourseID
-
-                    UNION
-
-                    -- Finished assignment lessons
-                    SELECT t3.LessonID
-                    FROM TAKE t3
-                    JOIN ASSIGNMENT a3 ON a3.AssID = t3.LessonID
-                    JOIN [MODULE] mm6 ON a3.ModuleID = mm6.ModuleID
-                    WHERE t3.UserID = AE.UserID AND t3.is_finished = 1 AND mm6.CourseID = AE.CourseID
+                    SELECT t.LessonID FROM TAKE t JOIN CONTENT c ON t.LessonID = c.ContentID JOIN [MODULE] m ON c.ModuleID = m.ModuleID WHERE t.UserID = AE.UserID AND t.is_finished = 1 AND m.CourseID = AE.CourseID
+                    UNION ALL
+                    SELECT t.LessonID FROM TAKE t JOIN QUIZ q ON t.LessonID = q.QuizID JOIN [MODULE] m ON q.ModuleID = m.ModuleID WHERE t.UserID = AE.UserID AND t.is_finished = 1 AND m.CourseID = AE.CourseID
+                    UNION ALL
+                    SELECT t.LessonID FROM TAKE t JOIN ASSIGNMENT a ON t.LessonID = a.AssID JOIN [MODULE] m ON a.ModuleID = m.ModuleID WHERE t.UserID = AE.UserID AND t.is_finished = 1 AND m.CourseID = AE.CourseID
                 ) AS DoneLessons
             ) AS FinishedLessons
-    ) AS calc
-    ;
+    ) AS Counts
+    -- Tính toán % Progress cuối cùng (FinalCalc) để dùng chung cho cả cột Progress và Status
+    CROSS APPLY (
+        SELECT CAST(
+            CASE 
+                WHEN Counts.TotalLessons = 0 THEN 0.0
+                ELSE ROUND((CAST(Counts.FinishedLessons AS FLOAT) * 100.0) / Counts.TotalLessons, 1)
+            END 
+        AS DECIMAL(4,1)) AS NewProgress
+    ) AS FinalCalc;
 END;
 GO
