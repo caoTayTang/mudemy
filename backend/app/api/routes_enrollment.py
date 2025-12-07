@@ -30,19 +30,28 @@ def my_enrollments(current_user: CurrentUser = Depends(get_current_user_from_ses
 	if current_user.role == 'tutor':
 		raise HTTPException(status_code=403, detail="Not authorized, requires STUDENT role")
 
-	items = enrollment_service.get_student_enrollments(current_user.user_id)
+	# items = enrollment_service.get_student_enrollments_with_details(current_user.user_id)
+	# return {
+	# 	"status": "success",
+	# 	"count": len(items),
+	# 	"enrollments": [{
+	# 		"EnrollmentID": e.EnrollmentID,
+	# 		"CourseID": e.CourseID,
+	# 		"PaymentID": e.PaymentID,
+	# 		"StudentID": e.StudentID,
+	# 		"Status": e.Status,
+	# 		"Enroll_date": e.Enroll_date
+	# 	} for e in items]
+	# }
+
+	# Call the new joined method
+	data = enrollment_service.get_student_enrollments_with_details(current_user.user_id)
+    
 	return {
-		"status": "success",
-		"count": len(items),
-		"enrollments": [{
-			"EnrollmentID": e.EnrollmentID,
-			"CourseID": e.CourseID,
-			"PaymentID": e.PaymentID,
-			"StudentID": e.StudentID,
-			"Status": e.Status,
-			"Enroll_date": e.Enroll_date
-		} for e in items]
-	}
+        "status": "success",
+        "count": len(data),
+        "enrollments": data # This now contains Title, Image, Instructor!
+    }
 
 
 @router.delete("/enrollments/{enrollment_id}")

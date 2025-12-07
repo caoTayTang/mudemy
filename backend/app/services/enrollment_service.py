@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
-from ..models.models import Enrollment, Payment, Certificate
+from ..models.models import Enrollment, Payment, Certificate, Course, Instruct, User
 from ..models import generate_id
 
 class EnrollmentService:
@@ -52,12 +52,57 @@ class EnrollmentService:
                 Enrollment.StudentID == student_id
             ).first()
     
+    # Not use too little detail
     def get_student_enrollments(self, student_id: str) -> List[Enrollment]:
         """Get all enrollments for a student"""
         with self.db_session() as session:
             return session.query(Enrollment).filter(
                 Enrollment.StudentID == student_id
             ).all()
+        
+    def get_student_enrollments_with_details(self, student_id: str):
+        """
+        Fetches enrollments with Course Title, Instructor Name, and Progress.
+        """
+        # 1. Build the Query
+        # We join Enrollment -> Course
+        # Then Course -> Instruct -> User (to find the instructor)
+        # We use distinct() because a course might have multiple instructors, avoiding duplicate rows
+        with self.db_session() as session:
+            results = (
+                session.query(
+                    Enrollment.EnrollmentID,
+                    Enrollment.Status,
+                    Enrollment.Enroll_date,
+                    Course.CourseID,
+                    Course.Title.label("course_title"),
+                    User.Full_name.label("instructor_name")
+                )
+                .join(Course, Enrollment.CourseID == Course.CourseID)
+                .outerjoin(Instruct, Course.CourseID == Instruct.CourseID) # Left join in case no instructor assigned
+                .outerjoin(User, Instruct.UserID == User.UserID)
+                .filter(Enrollment.StudentID == student_id)
+                .distinct(Enrollment.EnrollmentID) # Ensure one row per enrollment
+                .all()
+            )
+
+        # 2. Format the output to match what your React Frontend needs
+        enrollments_data = []
+        for row in results:
+            # Optional: Fetch lessons/modules count for progress calculation if 'progress' isn't a column
+            # This is a sub-query optimization you can add later.
+            
+            enrollments_data.append({
+                "id": row.CourseID, # Frontend uses CourseID as key often
+                "enrollment_id": row.EnrollmentID,
+                "title": row.course_title,
+                "instructor": row.instructor_name or "MUDemy Instructor",
+                "status": row.Status,
+                "progress": row.progress if hasattr(row, 'progress') else 0,
+                "lessons": [] 
+            })
+        print("Enrollments Data:", enrollments_data)
+        return enrollments_data
     
     def get_course_enrollments(self, course_id: str) -> List[Enrollment]:
         """Get all enrollments for a course"""
