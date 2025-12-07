@@ -2,7 +2,7 @@ import React from 'react';
 import { useInstructorCourseController } from '../hooks/useInstructorCourseController';
 import profileImg from "../assets/profile.jpg";
 import { useNavigate } from 'react-router-dom';
-import logoImg from '../assets/logo.png'; // Imported logo
+import logoImg from '../assets/logo.png'; 
 
 const InstructorCoursePage = () => {
   const navigate = useNavigate();
@@ -34,10 +34,7 @@ const InstructorCoursePage = () => {
         {/* =======================
             SIDEBAR
            ======================= */}
-        <aside 
-          
-          className="flex w-72 flex-col border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4 hidden md:flex h-screen sticky top-0"
-        >
+        <aside className="flex w-72 flex-col border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4 hidden md:flex h-screen sticky top-0">
           {/* Profile Section */}
           <div 
             onClick={ () => navigate('/instructor') } 
@@ -57,7 +54,7 @@ const InstructorCoursePage = () => {
             </div>
           </div>
 
-          {/* Filter/Search (Kept from functionality requirements) */}
+          {/* Filter/Search */}
           <div className="mb-4 space-y-2">
              <input 
               type="text" 
@@ -118,9 +115,6 @@ const InstructorCoursePage = () => {
           <header className="flex items-center justify-between whitespace-nowrap border-b border-border-light dark:border-border-dark px-6 md:px-10 py-3 bg-surface-light dark:bg-surface-dark sticky top-0 z-10">
             <div className="flex items-center gap-4 text-text-light dark:text-text-dark">
               <div className="size-6 text-primary">
-                {/* <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 7.27094L4 42.4379Z" fill="currentColor"></path>
-                </svg> */}
                 <img src={logoImg} alt="MUDemy Logo" className="h-8 w-auto"/>
               </div>
               <h2 className="text-text-light dark:text-text-dark text-lg font-bold leading-tight tracking-[-0.015em]">MUDemy Instructor</h2>
@@ -131,14 +125,11 @@ const InstructorCoursePage = () => {
               {selectedCourse && !isEditing && !isCreating && (
                 <button 
                   onClick={() => actions.handleDelete(selectedCourse.CourseID)}
-                  className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-red-700 dark:hover:bg-red-500 transition-colors"
+                  className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-transparent border border-red-200 text-red-500 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
                 >
                   Delete
                 </button>
               )}
-              {/* <button className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-red-700 dark:hover:bg-red-500 transition-colors">
-                <span className="truncate">Submit for Approval</span>
-              </button> */}
             </div>
           </header>
 
@@ -242,7 +233,7 @@ const InstructorCoursePage = () => {
                 </div>
               ) : selectedCourse ? (
                 
-                /* --- VIEW: COURSE DETAILS (Matches your HTML Design) --- */
+                /* --- VIEW: COURSE DETAILS --- */
                 <>
                   {/* Course Info Header */}
                   <div className="flex flex-wrap justify-between items-center gap-4 p-4 mb-4 bg-surface-light dark:bg-surface-dark rounded-lg border border-border-light dark:border-border-dark shadow-sm">
@@ -251,6 +242,9 @@ const InstructorCoursePage = () => {
                         <p className="text-primary dark:text-red-400 text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">
                           {selectedCourse.Title}
                         </p>
+                        <span className="text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 px-2.5 py-0.5 rounded-full">
+                          Draft
+                        </span>
                       </div>
                       <p className="text-text-muted-light dark:text-text-muted-dark text-base font-normal leading-normal">
                         {selectedCourse.Description}
@@ -356,6 +350,47 @@ const InstructorCoursePage = () => {
                       <span className="material-symbols-outlined text-lg">add_circle</span>
                       Add New Module
                     </button>
+                  </div>
+
+                  {/* Enrollments Section */}
+                  <h2 className="text-2xl font-bold mb-4 mt-8 px-4">Enrollments ({enrollments.length})</h2>
+                  <div className="mx-4 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden shadow-sm">
+                    {enrollments.length === 0 ? (
+                      <div className="p-6 text-center text-text-muted-light">
+                        <p>No students enrolled yet.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead className="bg-gray-50 dark:bg-gray-800/50 text-text-muted-light border-b border-border-light dark:border-border-dark">
+                            <tr>
+                              <th className="px-6 py-3 font-medium whitespace-nowrap">Student ID</th>
+                              <th className="px-6 py-3 font-medium whitespace-nowrap">Date</th>
+                              <th className="px-6 py-3 font-medium whitespace-nowrap">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                            {enrollments.map(enr => (
+                              <tr key={enr.EnrollmentID} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                <td className="px-6 py-4 text-text-light dark:text-text-dark">{enr.StudentID}</td>
+                                <td className="px-6 py-4 text-text-muted-light dark:text-text-muted-dark">
+                                  {new Date(enr.Enroll_date).toLocaleDateString()}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+                                    enr.Status === 'Active' 
+                                      ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' 
+                                      : 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
+                                  }`}>
+                                    {enr.Status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
