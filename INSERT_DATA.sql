@@ -120,6 +120,7 @@ INSERT INTO PAYMENT (PaymentID, Amount, Payment_method, UserID) VALUES
 GO
 
 -- 10. ENROLLMENT: 12 rows
+DISABLE TRIGGER trg_check_course_prerequisites ON ENROLLMENT;
 INSERT INTO ENROLLMENT (EnrollmentID,CourseID,PaymentID,StudentID,[Status]) VALUES
 ('ENR001', 'CRS00006', 'PAY001', 'USR00013', N'Completed'),
 ('ENR002', 'CRS00005', 'PAY002', 'USR00013', N'Completed'),
@@ -134,6 +135,7 @@ INSERT INTO ENROLLMENT (EnrollmentID,CourseID,PaymentID,StudentID,[Status]) VALU
 ('ENR011','CRS00004','PAY011','USR00010',N'Active'),
 ('ENR012','CRS00006','PAY012','USR00012',N'Active');
 GO
+ENABLE TRIGGER trg_check_course_prerequisites ON ENROLLMENT;
 
 -- 11. CONTENT: 15 rows
 INSERT INTO CONTENT (ContentID,Title,ModuleID,Slides) VALUES
