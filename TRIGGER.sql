@@ -74,7 +74,7 @@ END;
 GO
 
 -- ================================================
--- 3. Trigger kiểm tra Deadline cho QUIZ (MỚI THÊM)
+-- 3. Trigger kiểm tra Deadline cho QUIZ
 -- (Áp dụng cho bảng QUIZ_SUBMISSION)
 -- ================================================
 CREATE OR ALTER TRIGGER trg_check_quiz_deadline
