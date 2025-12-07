@@ -61,6 +61,7 @@ config.local.py
 settings.secret.json
 
 test.py
+/backend/app/seed_db.py
 
 *.db
 *.sqlite3

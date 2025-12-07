@@ -35,6 +35,7 @@ def get_me(current_user: CurrentUser = Depends(get_current_user_from_session)):
 			"IFlag": u.IFlag,
 			"Bio_text": u.Bio_text,
 			"Year_of_experience": u.Year_of_experience,
+			"Average_rating":u.Average_rating,
 			"SFlag": u.SFlag,
 			"Total_enrollments": u.Total_enrollments
 		}
@@ -72,6 +73,7 @@ def list_users(limit: int = 100, current_user: CurrentUser = Depends(get_current
 			"IFlag": u.IFlag,
 			"Bio_text": u.Bio_text,
 			"Year_of_experience": u.Year_of_experience,
+			"Average_rating":u.Average_rating,
 			"SFlag": u.SFlag,
 			"Total_enrollments": u.Total_enrollments
 		} for u in users]
@@ -100,6 +102,7 @@ def get_user(user_id: str, current_user: CurrentUser = Depends(get_current_user_
 			"IFlag": u.IFlag,
 			"Bio_text": u.Bio_text,
 			"Year_of_experience": u.Year_of_experience,
+			"Average_rating":u.Average_rating,
 			"SFlag": u.SFlag,
 			"Total_enrollments": u.Total_enrollments
 		}
@@ -151,8 +154,10 @@ def list_instructors(current_user: CurrentUser = Depends(get_current_user_from_s
 			"City": u.City,
 			"Country": u.Country,
 			"Phone": u.Phone,
+			"Date_of_birth": u.Date_of_birth,
 			"Bio_text": u.Bio_text,
-			"Year_of_experience": u.Year_of_experience
+			"Year_of_experience": u.Year_of_experience,
+			"Average_rating":u.Average_rating
 		} for u in items]
 	}
 
@@ -172,6 +177,8 @@ def list_students(current_user: CurrentUser = Depends(get_current_user_from_sess
 			"Full_name": u.Full_name,
 			"City": u.City,
 			"Country": u.Country,
+			"Phone": u.Phone,
+			"Date_of_birth": u.Date_of_birth,
 			"Total_enrollments": u.Total_enrollments
 		} for u in items]
 	}

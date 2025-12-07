@@ -1,7 +1,7 @@
-from sqlalchemy import Column, String, Integer, DateTime, Date, DECIMAL, Text as TextType, ForeignKey, Boolean, NVARCHAR, FetchedValue
-from datetime import datetime
+from sqlalchemy import Column, String, Integer, DateTime, Date, DECIMAL, Text as TextType, ForeignKey, Boolean, NVARCHAR, FetchedValue, CheckConstraint
+from datetime import datetime, date
 from .base import Base
-
+from sqlalchemy.ext.hybrid import hybrid_property
 
 class User(Base):
     __tablename__ = 'USER'
@@ -22,9 +22,18 @@ class User(Base):
     IFlag = Column(Boolean)  # Instructor flag
     Bio_text = Column(NVARCHAR(None))  # NVARCHAR(MAX)
     Year_of_experience = Column(Integer)
+    Average_rating = Column(DECIMAL(3, 1),CheckConstraint("Average_rating >= 0.0 AND Average_rating <= 5.0"),nullable=True,default=None)
     SFlag = Column(Boolean)  # Student flag
     Total_enrollments = Column(Integer, default=0)
 
+    @hybrid_property
+    def Age(self):
+        if self.Date_of_birth is None:
+            return None
+        today = date.today()
+        return today.year - self.Date_of_birth.year - (
+            (today.month, today.day) < (self.Date_of_birth.month, self.Date_of_birth.day)
+        )
 
 class Qualification(Base):
     __tablename__ = 'QUALIFICATION'
@@ -59,7 +68,7 @@ class Course(Base):
     Language = Column(NVARCHAR(50), nullable=False)
     Title = Column(NVARCHAR(200), nullable=False)
     Description = Column(NVARCHAR(None))  # NVARCHAR(MAX)
-
+    Enrollment_count = Column(Integer,CheckConstraint("Enrollment_count >= 0"),nullable=False,default=0)
 
 class Requires(Base):
     __tablename__ = 'REQUIRES'
@@ -87,6 +96,7 @@ class Enrollment(Base):
     StudentID = Column(String(10), ForeignKey('USER.UserID'), primary_key=True)
     Status = Column(NVARCHAR(20), default='Active')
     Enroll_date = Column(DateTime, default=datetime.utcnow)
+    Progress = Column(DECIMAL(3, 1),CheckConstraint("Progress >= 0 AND Progress <= 100"), nullable=False, default=0.0)
 
 
 class Payment(Base):
