@@ -5,7 +5,7 @@ GO
 -- ================================================
 
 
--- 1. CalculateContentCompletionRate: tỉ lệ hoàn thành khóa học của SV đối với môn học
+-- 1. CalculateContentCompletionRate: tỉ lệ phần trăm hoàn thành khóa học của SV đối với môn học
 -- ARGS:
 --      + StudentID(VARCHAR(10))
 --      + CourseID(VARCHAR(10)) 
@@ -37,7 +37,7 @@ BEGIN
 END;
 GO
 -- TEST
-SELECT dbo.CalculateContentCompletionRate('USR00006', 'CRS00001') AS CompletionRate;
+SELECT dbo.CalculateContentCompletionRate('USR00006', 'CRS00002') AS CompletionRate; -- 4 CONTENT CHỈ FINISH 2 CONTENT
 GO
 -- 2. GetInstructorsByQualificationKeyword:Tìm kiếm giảng viên phù hợp với chuyên ngành mình học
 -- ARGS:
@@ -111,7 +111,7 @@ SELECT
     'USR00006' AS StudentID, 
     'CRS00002' AS CourseID,
     dbo.CalculateCourseAverageScore('USR00006', 'CRS00002') AS ActualAverageScore,
-    '88.00' AS ExpectedResult;
+    '94.00' AS ExpectedResult; -- (88 + 100)/2 = 94
 GO
 -- ================================================
 -- PROCEDURE
