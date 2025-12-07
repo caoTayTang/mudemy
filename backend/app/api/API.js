@@ -71,6 +71,7 @@ const API_DOCS = [
         IFlag: true,
         Bio_text: "Giảng viên MUdemy",
         Year_of_experience: 15,
+        Average_rating:3.0,
         SFlag: false,
         Total_enrollments: 0,
       },
