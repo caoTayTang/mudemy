@@ -39,11 +39,11 @@ GO
 -- TEST
 SELECT dbo.CalculateContentCompletionRate('USR00006', 'CRS00002') AS CompletionRate; -- 4 CONTENT CHỈ FINISH 2 CONTENT
 GO
--- 2. GetInstructorsByQualificationKeyword:Tìm kiếm giảng viên phù hợp với chuyên ngành mình học
+-- 2. GetInstructorByKeyword:Tìm kiếm giảng viên phù hợp với chuyên ngành mình học
 -- ARGS:
 --      + Keyword(NVARCHAR(50))
 -- RETURNS: TABLE
-CREATE OR ALTER FUNCTION GetInstructorsByQualificationKeyword (
+CREATE OR ALTER FUNCTION GetInstructorByKeyword (
     @Keyword NVARCHAR(50)
 )
 RETURNS @QualifiedInstructors TABLE (
@@ -60,12 +60,14 @@ BEGIN
         Q.Qualification
     FROM [USER] U
     JOIN QUALIFICATION Q ON U.UserID = Q.UserID
-    WHERE Q.Qualification LIKE '%' + @Keyword + '%';
+    JOIN INSTRUCT I ON I.UserID = U.UserID
+    JOIN COURSE C ON C.CourseID = I.CourseID
+    WHERE (Q.Qualification LIKE '%' + @Keyword + '%') OR (C.Title LIKE '%' + @Keyword + '%') OR (C.[Description] LIKE '%' + @Keyword + '%');
     RETURN;
 END;
 GO
 -- TEST
-SELECT * FROM dbo.GetInstructorsByQualificationKeyword('Sci')
+SELECT * FROM dbo.GetInstructorsByQualificationKeyword('PYTHON')
 GO
 
 -- 3. CalculateCourseAverageScore: Tính điểm trung bình của khóa học mà sinh viên tham gia
