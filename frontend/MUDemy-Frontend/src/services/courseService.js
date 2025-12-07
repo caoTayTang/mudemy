@@ -1,39 +1,57 @@
 import axiosClient from '../api/axiosClient';
 
+/**
+ * Maps Backend Data (PascalCase) -> Frontend UI (camelCase)
+ * This ensures your React components get the data they expect.
+ */
 const mapCourseToFrontend = (apiCourse) => ({
-  // Strictly mapping keys from your API_DOCS
-  id: apiCourse.CourseID, // Key: CourseID
-  title: apiCourse.Title, // Key: Title
-  description: apiCourse.Description || "No description available", // Key: Description
-  level: apiCourse.Difficulty, // Key: Difficulty
-  // Handle Categories: API returns array of strings ["Python", "Deep Learning"] or undefined
-  category: Array.isArray(apiCourse.Categories) ? apiCourse.Categories[0] : (apiCourse.Categories || "General"), 
-  
-  // Fields NOT in your API (using static placeholders as requested)
-  author: "MUDemy Instructor", 
-  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAwZhaZNZcPvZguKgpvSplwjbU6avMNIxKMhfAlEXpcM72Ph19ef-qCxHCBh9fD9zBF99kAEbApneZWBEkJdv8FW0HxSjTkkHVG8obgwT9nTC-n3tVyY-XSJlT6CFldc9EXu3rM1_TGR19HI1T0xoXFnZXYBpk0k_rhUTK7MBRIPrHp1XwrzXq9L5T2D3YTSf1Ob-W6M-711iPtV8bv7YfTv6qRfikelW5LtON9h52zeLGqPsvxCbOZwZT0lcObFnXsYaMYUQSjxYc",
-  price: 0,
-  originalPrice: 0,
-  badgeColor: "bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200",
-  rating: 4.5,
-  ratingCount: 0,
-  studentCount: 0,
-  lastUpdated: "Recently",
+  // --- DIRECT MAPPING FROM API DOCS ---
+  id: apiCourse.CourseID,           // API: CourseID
+  title: apiCourse.Title,           // API: Title
+  description: apiCourse.Description || "No description provided.", // API: Description
+  level: apiCourse.Difficulty,      // API: Difficulty
+  language: apiCourse.Language,     // API: Language
+  categories: apiCourse.Categories || [], // API: Categories (Array)
+  prerequisites: apiCourse.Prerequisites || [], // API: Prerequisites (Array)
 
-  // Curriculum logic (Assuming this structure exists or defaulting to empty)
-  curriculum: apiCourse.modules ? apiCourse.modules.map(mod => ({
-    title: mod.title,
-    lessons: mod.content ? mod.content.map(c => c.title) : [] 
-  })) : [],
+  // --- UI PLACEHOLDERS (Data not in current API response) ---
+  // We use static defaults so the page looks good until backend adds these fields
+  author: {
+    name: "MUDemy Instructor",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCyM5V5W1caBuueUy7B-ybcmN1I-ykhwjlBERPyo41MhwSEAdpYA-UDCuE_5Zd-lt9b-KIVIU60d2NXaN_s8AhaZNjkY5C_c6b6mwjpMeUCSkfZLJoP_a5CzSTNMMzyfkedXxStQD2cZxBf1FPaOGxT_ScETx339vlXsH6e6ZB4BAiGk96H7ow8bQvbHlJqvCPC2GaVMkgVPqa_RlQIK0nrA95sK1eyulYQzRfxLOPnqcKuiuCapA17X0SJRpT6A3nplRZ9IywTO7c",
+    bio: "Experienced instructor on MUDemy platform."
+  },
+  image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBmOLsiegX7ApjwgsQJFWzwh3JEmAWOSxOnRbGvoDmhHOOHETU1-MaiY7YHhza1K1FTTExboLq8SotjKGetXmFfKdVxtKh-55P3Qqb0r_gb-Rt0sjBISLXUZXOKT86lYTalrZZmWmpDmvTZw65cXRfaaothPq5HZCNo0o-M-vvUz8mqWKg-lvO-c9UvNrJzN1aJXzCM1zEObyWDWJckwHMODBhQvAT7yNf4HFgtS2tMUARs3JwKyHaBTX1wW-h7ZojoCccC8LlwX2s",
+  price: 19.99, // Default price
+  originalPrice: 99.99,
+  discount: "80% off",
+  rating: 4.8,
+  ratingCount: 120,
+  studentCount: 500,
+  lastUpdated: "Recently",
+  
+  // Curriculum Structure (Placeholder until /modules endpoint is integrated here)
+  curriculum: [
+    { title: "Introduction", lessons: ["Welcome to the course", "Setup Environment"] },
+    { title: "Core Concepts", lessons: ["Basic Syntax", "Control Flow", "Functions"] }
+  ],
+  whatYouWillLearn: [
+    "Master the core concepts",
+    "Build real-world applications",
+    "Understand best practices"
+  ]
 });
 
 export const courseService = {
+  /**
+   * Fetch all courses for the catalog.
+   * Endpoint: GET /api/courses
+   */
   getFeaturedCourses: async () => {
     try {
       const response = await axiosClient.get('/api/courses');
-      // API returns { status: "success", count: 6, courses: [...] }
+      // API Output: { status: "success", count: 6, courses: [...] }
       const courses = response.courses || [];
-      console.info("Fetched Featured Courses:", courses);
       return courses.map(mapCourseToFrontend);
     } catch (error) {
       console.error("Failed to fetch featured courses:", error);
@@ -41,12 +59,20 @@ export const courseService = {
     }
   },
 
+  /**
+   * Fetch specific course details.
+   * Endpoint: GET /api/courses/id/{id}
+   */
   getCourseById: async (id) => {
     try {
       const response = await axiosClient.get(`/api/courses/id/${id}`);
-      // API returns { status: "success", course: { ... } }
-      const courseData = response.course || response;
-      return mapCourseToFrontend(courseData);
+      // API Output: { status: "success", course: { CourseID, Title, ... } }
+      // We must access response.course, NOT response directly
+      if (response.course) {
+        console.info("Fetched Course Data:", response.course);
+        return mapCourseToFrontend(response.course);
+      }
+      throw new Error("Course object missing in response");
     } catch (error) {
       console.error(`Failed to fetch course ${id}:`, error);
       throw error;
@@ -54,30 +80,16 @@ export const courseService = {
   },
 
   /**
-   * Check if the current user meets prerequisites for a course.
+   * Check prerequisites for a course.
    * Endpoint: GET /api/courses/{course_id}/prerequisites/f
    */
   checkPrerequisites: async (courseId) => {
     try {
-      // Returns { status: "success", count: N, missing_prereqs: [{CourseID, Title}, ...] }
       const response = await axiosClient.get(`/api/courses/${courseId}/prerequisites/f`);
       return response.missing_prereqs || [];
     } catch (error) {
       console.error(`Failed to check prerequisites for ${courseId}:`, error);
-      return []; 
+      return [];
     }
-  },
-
-  getCartItems: async () => {
-    return [
-      {
-        id: 101,
-        title: "Real API Course Placeholder",
-        author: "System",
-        price: 12.99,
-        originalPrice: 99.99,
-        image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBJapRcQBAy7p4JLzZIuU2VDLFFBtB_Wk5cNWLNdJOFTo5Vv1gT9LoxxAU7epponKE60IwstY27vNbstNMDW2JDyBxLdzRGR0wwLPCma5G9exLiPcq0NcBRufzgV--GbAGDhdqKXYt5BKJa7IGyE_RdrktfxUEuBJ69uWNoLtEr3oISMI2uARFZ6K4_o0Y7ct3ZjiVXw-LSH9V624bK5R-YypbCL4J2ACc6FCyvUj4xcuzW3OTlxKvz6TnGN2y3ATWTK1clgyNH09w"
-      }
-    ];
   }
 };

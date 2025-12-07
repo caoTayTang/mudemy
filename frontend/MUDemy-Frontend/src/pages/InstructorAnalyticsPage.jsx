@@ -1,6 +1,7 @@
 import React from 'react';
 import { useInstructorAnalyticsController } from '../hooks/useInstructorAnalyticsController';
 import { useNavigate } from 'react-router-dom';
+import logoImg from '../assets/logo.png'; // Imported logo
 
 const InstructorAnalyticsPage = () => {
   const navigate = useNavigate();
@@ -12,8 +13,9 @@ const InstructorAnalyticsPage = () => {
       {/* --- MAIN SIDEBAR (Global) --- */}
       <aside className="w-64 flex flex-col bg-[#0f172a] text-white flex-shrink-0">
         <div className="p-6">
-          <div className="bg-primary h-12 w-12 rounded flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
-            <span className="text-white text-3xl font-bold">M</span>
+          <div className="bg-secondary h-12 w-12 rounded flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
+            <img src={logoImg} alt="MUDemy Logo" className="h-10 w-auto"/>
+            {/* <span className="text-white text-3xl font-bold">M</span> */}
           </div>
         </div>
         <nav className="flex-1 px-4 space-y-2">
@@ -25,23 +27,23 @@ const InstructorAnalyticsPage = () => {
             <span className="material-icons-outlined">play_circle</span>
             <span>Courses</span>
           </a>
-          <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="#">
+          {/* <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="#">
             <span className="material-icons-outlined">schedule</span>
             <span>Communication</span>
-          </a>
+          </a> */}
           {/* Active State */}
           <a className="flex items-center space-x-3 px-3 py-2 rounded bg-primary/20 border-l-4 border-primary text-white" href="#">
             <span className="material-icons-outlined">bar_chart</span>
             <span>Performance</span>
           </a>
-          <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="#">
+          {/* <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="#">
             <span className="material-icons-outlined">build</span>
             <span>Tools</span>
           </a>
           <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="#">
             <span className="material-icons-outlined">help_outline</span>
             <span>Resources</span>
-          </a>
+          </a> */}
         </nav>
         <div className="p-4">
           <a className="flex items-center space-x-3 px-3 py-2 rounded text-slate-300 hover:bg-slate-700/50 transition-colors" href="#">

@@ -2,6 +2,7 @@ import React from 'react';
 import { useInstructorCourseController } from '../hooks/useInstructorCourseController';
 import profileImg from "../assets/profile.jpg";
 import { useNavigate } from 'react-router-dom';
+import logoImg from '../assets/logo.png'; // Imported logo
 
 const InstructorCoursePage = () => {
   const navigate = useNavigate();
@@ -117,9 +118,10 @@ const InstructorCoursePage = () => {
           <header className="flex items-center justify-between whitespace-nowrap border-b border-border-light dark:border-border-dark px-6 md:px-10 py-3 bg-surface-light dark:bg-surface-dark sticky top-0 z-10">
             <div className="flex items-center gap-4 text-text-light dark:text-text-dark">
               <div className="size-6 text-primary">
-                <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                {/* <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                   <path d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 7.27094L4 42.4379Z" fill="currentColor"></path>
-                </svg>
+                </svg> */}
+                <img src={logoImg} alt="MUDemy Logo" className="h-8 w-auto"/>
               </div>
               <h2 className="text-text-light dark:text-text-dark text-lg font-bold leading-tight tracking-[-0.015em]">MUDemy Instructor</h2>
             </div>

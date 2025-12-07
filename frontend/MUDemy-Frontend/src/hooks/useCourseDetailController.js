@@ -12,8 +12,9 @@ export const useCourseDetailController = () => {
     const fetchCourse = async () => {
       try {
         setLoading(true);
+        // The service now handles the mapping and returns the single course object
         const data = await courseService.getCourseById(id);
-        setCourse(data);
+        setCourse(data); 
       } catch (error) {
         console.error("Failed to fetch course details", error);
       } finally {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { courseService } from '../services/courseService';
-import { authService } from '../services/authService'; // Import Auth Service
+import { authService } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 
 /**
@@ -12,9 +12,13 @@ export const useHomeController = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [user, setUser] = useState(null); // NEW: Track Logged-in User
+  const [user, setUser] = useState(null);
   
+  // --- FILTER & SORT STATE ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const [difficulty, setDifficulty] = useState("All"); // 'All', 'Beginner', 'Intermediate', 'Advanced'
+  const [sortBy, setSortBy] = useState("title_asc"); // 'title_asc', 'title_desc'
+
   const [modalState, setModalState] = useState({
     isOpen: false,
     type: null,
@@ -26,20 +30,16 @@ export const useHomeController = () => {
     const initData = async () => {
       setLoading(true);
       try {
-        // 1. Fetch Public Courses
         const coursesData = await courseService.getFeaturedCourses();
         setCourses(coursesData);
         
-        // 2. Check Login Status
         const token = localStorage.getItem('token');
         if (token) {
           try {
             const userData = await authService.getMe();
-            // Handle backend response structure (response.user or direct object)
             setUser(userData.user || userData); 
           } catch (authErr) {
             console.warn("Token invalid or expired", authErr);
-            // Optional: localStorage.removeItem('token');
           }
         }
         
@@ -55,15 +55,29 @@ export const useHomeController = () => {
     initData();
   }, []);
 
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-  };
+  // --- DATA PROCESSING PIPELINE ---
+  const processedCourses = courses
+    // 1. Filter by Search
+    .filter(course => 
+      course.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    // 2. Filter by Difficulty
+    .filter(course => {
+      if (difficulty === "All") return true;
+      return course.level === difficulty;
+    })
+    // 3. Sort
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'title_asc':
+          return a.title.localeCompare(b.title);
+        case 'title_desc':
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
 
-  const filteredCourses = courses.filter(course => 
-    course.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // --- Prerequisite Check Logic ---
   const handleCheckPrerequisites = async (courseId) => {
     const token = localStorage.getItem('token');
     
@@ -89,7 +103,6 @@ export const useHomeController = () => {
     setModalState(prev => ({ ...prev, isOpen: false }));
   };
 
-  // NEW: Logout Action
   const handleLogout = async () => {
     await authService.logout();
     setUser(null);
@@ -97,14 +110,17 @@ export const useHomeController = () => {
   };
 
   return {
-    courses: filteredCourses,
+    courses: processedCourses, // Export processed list
     loading,
     error,
-    searchQuery,
     modalState,
-    user, // Expose user state to View
+    user,
+    // Export Filter State
+    filters: { searchQuery, difficulty, sortBy },
     actions: {
-      handleSearchChange,
+      setSearchQuery,
+      setDifficulty,
+      setSortBy,
       handleCheckPrerequisites,
       closeModal,
       handleLogout

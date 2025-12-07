@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLoginController } from '../hooks/useLoginController';
+import logoImg from '../assets/logo.png'; // Imported logo
 
 const LoginPage = () => {
   const { 
@@ -27,7 +28,7 @@ const LoginPage = () => {
             </div>
             <div className="w-full max-w-md text-center z-10">
               <div className="inline-flex items-center justify-center p-6 bg-white dark:bg-[#2a1818] rounded-full shadow-lg mb-8 border border-primary/10">
-                <span className="material-symbols-outlined text-6xl text-primary">school</span>
+                <img src={logoImg} alt="MUDemy Logo" className="w-16 h-auto"/>
               </div>
               <h2 className="text-3xl font-bold text-[#1b0d0d] dark:text-[#fcf8f8]">Unlock Your Potential</h2>
               <p className="mt-2 text-[#9a4c4c] dark:text-[#e7cfcf]">Join thousands of learners and start your journey with MUDemy today.</p>

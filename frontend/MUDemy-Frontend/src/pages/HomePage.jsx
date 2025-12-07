@@ -1,14 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHomeController } from '../hooks/useHomeController';
-
+import logoImg from '../assets/logo.png'; // Imported logo
+import profileImg from '../assets/profile.jpg'
 /**
  * HomePage (View)
  * Displays the public course catalog.
  */
 const HomePage = () => {
-  const { courses, loading, searchQuery, modalState, user, actions } = useHomeController();
+  const { courses, loading, searchQuery, modalState, user, filters, actions } = useHomeController();
   const navigate = useNavigate(); 
+  
+  // State for User Dropdown Menu
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // --- Modal Content Renderer ---
   const renderModalContent = () => {
@@ -88,9 +104,6 @@ const HomePage = () => {
     }
   };
 
-  // Determine Dashboard Link based on user role (IFlag = Instructor)
-  const dashboardLink = user?.IFlag ? '/instructor' : '/dashboard';
-
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#fef2f2] dark:bg-[#1f2937] font-sans text-[#1f2937] dark:text-[#f9fafb]">
       
@@ -119,19 +132,21 @@ const HomePage = () => {
             {/* --- HEADER --- */}
             <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#fee2e2] dark:border-[#4b5563] px-6 lg:px-10 py-3">
               <div className="flex items-center gap-8">
-                <div className="flex items-center gap-4 text-[#1f2937] dark:text-[#f9fafb] cursor-pointer" onClick={() => navigate('/')}>
-                  <div className="size-6 text-[#dc2626]">
-                    <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path>
-                    </svg>
-                  </div>
+                <div className="flex items-center gap-3 text-[#1f2937] dark:text-[#f9fafb] cursor-pointer" onClick={() => navigate('/')}>
+                  {/* Replaced SVG with Logo Image */}
+                  <img src={logoImg} alt="MUDemy Logo" className="h-8 w-auto object-contain" />
                   <h2 className="text-lg font-bold leading-tight tracking-[-0.015em] text-[#1f2937] dark:text-[#f9fafb]">
                     MUDemy
                   </h2>
                 </div>
                 <div className="hidden lg:flex items-center gap-9">
-                  <a className="text-sm font-medium leading-normal text-[#1f2937] dark:text-[#f9fafb] hover:text-[#dc2626] dark:hover:text-[#dc2626]" href="#">Categories</a>
-                  <a className="text-sm font-medium leading-normal text-[#1f2937] dark:text-[#f9fafb] hover:text-[#dc2626] dark:hover:text-[#dc2626]" href="#">Become an Instructor</a>
+                  {
+                    !user?.IFlag && ( 
+                      <a className="text-sm font-medium leading-normal text-[#1f2937] dark:text-[#f9fafb] hover:text-[#dc2626] dark:hover:text-[#dc2626]" href="#">
+                        Become an Instructor
+                      </a> 
+                    )
+                  }
                 </div>
               </div>
               
@@ -144,36 +159,78 @@ const HomePage = () => {
                     <input 
                       className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#1f2937] dark:text-[#f9fafb] focus:outline-0 focus:ring-0 border-none bg-[#fee2e2] dark:bg-[#4b5563] focus:border-none h-full placeholder:text-[#6b7280] dark:placeholder:text-[#d1d5db] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal" 
                       placeholder="Search" 
-                      value={searchQuery}
-                      onChange={actions.handleSearchChange}
+                      value={filters.searchQuery}
+                      onChange={(e) => actions.setSearchQuery(e.target.value)}
                     />
                   </div>
                 </label>
 
                 {/* --- CONDITIONAL HEADER CONTENT --- */}
                 {user ? (
-                  <div className="flex items-center gap-3">
+                  <div className="relative" ref={menuRef}>
+                    {/* User Avatar Toggle */}
                     <button 
-                      onClick={() => navigate(dashboardLink)}
-                      className="hidden sm:block text-sm font-bold text-[#1f2937] dark:text-[#f9fafb] hover:text-primary transition-colors"
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center gap-2 focus:outline-none hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full p-1 pr-2 transition-colors"
                     >
-                      Dashboard
-                    </button>
-                    
-                    <div className="relative group cursor-pointer" onClick={() => navigate(dashboardLink)}>
                       <div 
-                        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-gray-200 dark:border-gray-600" 
-                        style={{ backgroundImage: `url("${user.Avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCLUFjvCwwhv-6mo2wiWpF_punDE3M5LEdO85YAFd7tL8wEbtGgdOWlA21Ii07ovkUQWpuPSKM3Q3JsfjasIOo95MgP52JfYv224flbTFzfz_yQ6UiaAkymnDgLAm7HZSfNB_EpUcyQ00AUwe3T_8V0S6OVcUQgQKU5sggQoOQoLVL6ESZKvZJESy1KANLcmcfxP7NzReCVKLpWRBWdARO9fKFbPqtamkkfhUjRVmzoiYMldothNvc8AeZBFaDcaLUiH_asXQMLOkE'}")` }}
+                        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 border border-gray-200 dark:border-gray-600" 
+                        style={{ backgroundImage: `url("${profileImg}")` }}
                       ></div>
-                    </div>
-
-                    <button 
-                      onClick={actions.handleLogout}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
-                      title="Log Out"
-                    >
-                      <span className="material-symbols-outlined">logout</span>
+                      <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">arrow_drop_down</span>
                     </button>
+
+                    {/* Dropdown Menu */}
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#2a2f3e] rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                            {user.User_name || user.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {user.Email || user.email}
+                          </p>
+                        </div>
+
+                        <ul className="py-1">
+                          {/* Student Dashboard */}
+                          <li>
+                            <button
+                              onClick={() => navigate('/dashboard')}
+                              className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-lg">school</span>
+                              Student Dashboard
+                            </button>
+                          </li>
+
+                          {/* Instructor Dashboard (Conditional) */}
+                          {user.IFlag && (
+                            <li>
+                              <button
+                                onClick={() => navigate('/instructor/courses')}
+                                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-2"
+                              >
+                                <span className="material-symbols-outlined text-lg">cast_for_education</span>
+                                Instructor Dashboard
+                              </button>
+                            </li>
+                          )}
+
+                          <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+
+                          <li>
+                            <button
+                              onClick={actions.handleLogout}
+                              className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-lg">logout</span>
+                              Log Out
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex gap-2">
@@ -206,7 +263,7 @@ const HomePage = () => {
               <section className="flex flex-col gap-6 px-4">
                 <h1 className="text-3xl font-bold leading-tight tracking-[-0.015em] text-red-900 dark:text-red-200">Discover Courses</h1>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* ... Filters (Same as before) ... */}
+                  {/* SEARCH */}
                   <label className="flex flex-col min-w-40 col-span-1 md:col-span-2">
                     <div className="flex w-full flex-1 items-stretch rounded-lg h-12 shadow-sm">
                       <div className="text-gray-400 dark:text-gray-500 flex border border-[#fee2e2] dark:border-[#4b5563] bg-[#ffffff] dark:bg-[#374151] items-center justify-center pl-4 rounded-l-lg border-r-0">
@@ -215,30 +272,38 @@ const HomePage = () => {
                       <input 
                         className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-none text-[#1f2937] dark:text-[#f9fafb] focus:outline-0 focus:ring-2 focus:ring-inset focus:ring-[#dc2626] border-y border-[#fee2e2] dark:border-[#4b5563] bg-[#ffffff] dark:bg-[#374151] h-full placeholder:text-[#6b7280] dark:placeholder:text-[#d1d5db] px-4 text-base font-normal leading-normal" 
                         placeholder="Search for anything..." 
-                        value={searchQuery}
-                        onChange={actions.handleSearchChange}
+                        value={filters.searchQuery}
+                        onChange={(e) => actions.setSearchQuery(e.target.value)}
                       />
                       <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-r-lg h-12 px-5 bg-[#dc2626] text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-red-700 dark:hover:bg-red-500 transition-colors">
                         <span className="truncate">Search</span>
                       </button>
                     </div>
                   </label>
-                  {/* ... Dropdowns (Same as before) ... */}
+
+                  {/* FILTER: DIFFICULTY */}
                   <div className="relative h-12">
-                    <select className="form-select w-full h-full rounded-lg border border-[#fee2e2] dark:border-[#4b5563] bg-[#ffffff] dark:bg-[#374151] text-[#1f2937] dark:text-[#f9fafb] focus:border-[#dc2626] focus:ring-[#dc2626] shadow-sm">
-                      <option>All Categories</option>
-                      <option>Development</option>
-                      <option>Business</option>
-                      <option>Design</option>
-                      <option>Marketing</option>
+                    <select 
+                      value={filters.difficulty}
+                      onChange={(e) => actions.setDifficulty(e.target.value)}
+                      className="form-select w-full h-full rounded-lg border border-[#fee2e2] dark:border-[#4b5563] bg-[#ffffff] dark:bg-[#374151] text-[#1f2937] dark:text-[#f9fafb] focus:border-[#dc2626] focus:ring-[#dc2626] shadow-sm cursor-pointer"
+                    >
+                      <option value="All">All Levels</option>
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
                     </select>
                   </div>
+
+                  {/* SORT BY */}
                   <div className="relative h-12">
-                    <select className="form-select w-full h-full rounded-lg border border-[#fee2e2] dark:border-[#4b5563] bg-[#ffffff] dark:bg-[#374151] text-[#1f2937] dark:text-[#f9fafb] focus:border-[#dc2626] focus:ring-[#dc2626] shadow-sm">
-                      <option>Any Difficulty</option>
-                      <option>Beginner</option>
-                      <option>Intermediate</option>
-                      <option>Advanced</option>
+                    <select 
+                      value={filters.sortBy}
+                      onChange={(e) => actions.setSortBy(e.target.value)}
+                      className="form-select w-full h-full rounded-lg border border-[#fee2e2] dark:border-[#4b5563] bg-[#ffffff] dark:bg-[#374151] text-[#1f2937] dark:text-[#f9fafb] focus:border-[#dc2626] focus:ring-[#dc2626] shadow-sm cursor-pointer"
+                    >
+                      <option value="title_asc">Sort by: A-Z</option>
+                      <option value="title_desc">Sort by: Z-A</option>
                     </select>
                   </div>
                 </div>
@@ -274,9 +339,9 @@ const HomePage = () => {
                           <p className="text-[#6b7280] dark:text-[#d1d5db] text-sm font-normal leading-normal line-clamp-2">
                             {course.description}
                           </p>
-                          {/* <p className="text-[#6b7280] dark:text-[#d1d5db] text-sm font-normal">
-                            By <span className="font-medium text-[#1f2937] dark:text-[#f9fafb]">{course.instructor_name}</span>
-                          </p> */}
+                          <p className="text-[#6b7280] dark:text-[#d1d5db] text-sm font-normal">
+                            By <span className="font-medium text-[#1f2937] dark:text-[#f9fafb]">{course.author.name}</span>
+                          </p>
                           
                           <div className="mt-2 flex gap-2">
                             {/* VIEW COURSE BUTTON */}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCheckoutController } from '../hooks/useCheckoutController';
 import { useNavigate } from 'react-router-dom';
+import logoImg from '../assets/logo.png'; // Imported logo
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -24,9 +25,7 @@ const CheckoutPage = () => {
           <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark px-6 md:px-10 lg:px-20 py-4">
             <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/')}>
               <div className="size-6 text-primary">
-                <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" fill="currentColor"></path>
-                </svg>
+                <img src={logoImg} alt="MUDemy Logo" className="h-8 w-auto"/>
               </div>
               <h2 className="text-xl font-bold tracking-tight">MUDemy</h2>
             </div>
