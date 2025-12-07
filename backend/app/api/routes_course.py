@@ -28,7 +28,6 @@ category_service = CategoryService(mudemy_session)
 # ============================================================
 # COURSE ROUTES
 # ============================================================
-
 @router.get("/courses")
 def get_all_courses(
     limit: int = Query(100, ge=1, le=100),
@@ -66,6 +65,7 @@ def create_course(
         raise HTTPException(status_code=403, detail="Not authorized, requires INSTRUCTOR role")
     
     try:
+        print("Creating course with data:", course_data)
         course = course_service.create_course(course_data)
         return JSONResponse(
             status_code=201,
@@ -140,6 +140,32 @@ def delete_course(
         raise HTTPException(status_code=404, detail="Course not found")
     
     return {"status": "deleted", "course_id": course_id}
+
+@router.get("/courses/{course_id}/progress")
+def get_course_progress(
+    course_id: str, 
+    current_user: CurrentUser = Depends(get_current_user_from_session)
+):
+    """
+    Calls SQL Function: CalculateContentCompletionRate(StudentID, CourseID)
+    """
+    student_id = current_user.user_id
+    
+    with mudemy_session() as session:
+        # Assuming SQL Server based on your previous 'EXEC' syntax
+        query = text("SELECT dbo.CalculateContentCompletionRate(:student_id, :course_id)")
+        
+        result = session.execute(query, {
+            "student_id": student_id, 
+            "course_id": course_id
+        }).scalar()
+        
+    return {
+        "status": "success", 
+        "course_id": course_id,
+        "progress": float(result) if result is not None else 0.0
+    }
+
 
 
 @router.get("/courses/search")

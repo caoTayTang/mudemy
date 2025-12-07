@@ -26,6 +26,7 @@ def login(
     password = data.get("password")
     role = data.get("role")
     
+    print("Login attempt:", username, password, role)
 
     user = user_service.get_user_by_username(username)
     if not username: 
@@ -57,15 +58,15 @@ def login(
         data={"sub": str(user.UserID), "role": role.lower()}
     )
 
-    response.set_cookie(
-        key="session_id",
-        value=access_token,
-        httponly=True,  
-        secure=True,    
-        samesite="lax"  
-    )
+    # response.set_cookie(
+    #     key="session_id",
+    #     value=access_token,
+    #     httponly=True,  
+    #     secure=True,    
+    #     samesite="lax"  
+    # )
     user_service.update_last_login(user.UserID)
-    return {"username": username, "role": role, "status": "Login successful"}
+    return {"username": username, "role": role, "status": "Login successful", "access_token": access_token}
 
 @router.post("/logout")
 def logout(

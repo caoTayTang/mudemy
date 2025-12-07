@@ -28,8 +28,9 @@ class CourseService:
                     session.refresh(course)
                     print(f"Successfully created {new_id} on attempt {attempt + 1}")
                     return course
-                except IntegrityError:
+                except IntegrityError as e:
                     session.rollback()
+                    print("Integrity Error:", str(e.orig))
                     print(f"Collision detected for {new_id}. Retrying...")
                     continue
                 except Exception as e:
