@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, Date, DECIMAL, Text as TextType, ForeignKey, Boolean, NVARCHAR, FetchedValue
+from sqlalchemy import Column, String, Integer, DateTime, Date, DECIMAL, Text as TextType, ForeignKey, Boolean, NVARCHAR, FetchedValue, CheckConstraint
 from datetime import datetime
 from .base import Base
 
@@ -22,6 +22,7 @@ class User(Base):
     IFlag = Column(Boolean)  # Instructor flag
     Bio_text = Column(NVARCHAR(None))  # NVARCHAR(MAX)
     Year_of_experience = Column(Integer)
+    Average_rating = Column(DECIMAL(3, 1),nullable=True,default=None)
     SFlag = Column(Boolean)  # Student flag
     Total_enrollments = Column(Integer, default=0)
 
