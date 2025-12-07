@@ -1,4 +1,4 @@
 EXEC CreateMngUserForApp
-	@LoginName= N'student123',
+	@LoginName= N'sManager',
 	@Password=N'Pass123!';
 GO
